@@ -128,6 +128,19 @@ public final class SyncContactHttpApi {
         return resultList;
     }
 
+    public static long getContactCount() throws MoMoException {
+        HttpTool httpTool = new HttpTool(RequestUrl.RETRIEVE_CONTACTS_COUNT);
+        httpTool.DoGet();
+        String response = httpTool.GetResponse();
+        Log.d(TAG, response);
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+            return jsonObject.getLong("all_count");
+        } catch (JSONException e) {
+            throw new MoMoException(e);
+        }
+    }
+
     /**
      * 获取服务器上联系人简要信息列表
      * 

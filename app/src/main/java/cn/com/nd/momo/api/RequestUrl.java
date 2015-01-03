@@ -234,4 +234,6 @@ public final class RequestUrl {
 
     static public final String BATCH_RETRIEVE_CONTACTS_URL = URL_API + "/contact/show_batch.json";
 
+    static public final String RETRIEVE_CONTACTS_COUNT = URL_API + "/contact/count.json";
+
 }
