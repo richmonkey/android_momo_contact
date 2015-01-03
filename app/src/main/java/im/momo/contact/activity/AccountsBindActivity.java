@@ -15,6 +15,7 @@ import android.app.AlertDialog.Builder;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -31,7 +32,9 @@ import android.widget.CheckBox;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import cn.com.nd.momo.api.sync.ContactSyncManager;
 import cn.com.nd.momo.api.sync.LocalContactsManager;
+import cn.com.nd.momo.api.types.Contact;
 import im.momo.contact.R;
 import cn.com.nd.momo.api.types.MyAccount;
 import cn.com.nd.momo.api.util.ConfigHelper;
@@ -116,6 +119,121 @@ public class AccountsBindActivity extends Activity implements OnClickListener {
 
     }
 
+    private Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_GET_ADD_CONTACT_COMPLETE:
+                    Log.d(TAG, "add contact list end");
+                    if (m_progressDlg.isShowing()) {
+                        m_progressDlg.dismiss();
+                    }
+
+                    finish();
+                    break;
+            }
+        }
+    };
+
+
+    private class ImportTask extends AsyncTask<Void, Void, Boolean> {
+        private ArrayList<MyAccount> selectedAccounts;
+
+        ImportTask(ArrayList<MyAccount> accounts) {
+            this.selectedAccounts = accounts;
+        }
+
+        private void importContact(List<MyAccount> accounts) {
+            if (accounts == null || accounts.size() == 0) {
+                return;
+            }
+            List<Contact> mContactList = new ArrayList<Contact>();
+            for (Account account : accounts) {
+                if (account.type.equals("sim")) {
+                    mContactList.addAll(LocalContactsManager.getInstance().getSimContacts());
+                } else {
+                    mContactList.addAll(LocalContactsManager.getInstance().getAllContactsListByAccount(account));
+                }
+            }
+            android.util.Log.d(TAG, "before crc, add contact size:" + mContactList.size());
+            if (mContactList.size() < 1) {
+                android.util.Log.d(TAG, "import account contacts complete");
+            }
+            Account account = Utils.getCurrentAccount();
+            List<Contact> syncAccountContacts = LocalContactsManager.getInstance().getAllContactsListByAccount(account);
+
+            android.util.Log.d(TAG, "syc account contact size:" + syncAccountContacts.size());
+            List<Long> contactCrcList = new ArrayList<Long>();
+            for (Contact contact : syncAccountContacts) {
+                contactCrcList.add(contact.generateProperCRC());
+            }
+            // crc去重,不比较头像，是否收藏，分组
+            Iterator<Contact> ite = mContactList.iterator();
+            while (ite.hasNext()) {
+                Contact addContact = ite.next();
+                long crc = addContact.generateProperCRC();
+                if (contactCrcList.contains(crc)) {
+                    ite.remove();
+                }
+            }
+            android.util.Log.d(TAG, "after crc, add contact size:" + mContactList.size());
+
+            if (Utils.isBindedAccountExist(account) && mContactList.size() > 0) {
+                final int eachNum = 100;
+                int count = mContactList.size();
+                int times = count / eachNum + 1;
+
+                for (int i = 0; i < times; i++) {
+                    List<Contact> list;
+                    int begin = i * eachNum;
+                    if (i == times - 1) {
+                        list = mContactList.subList(begin, count);
+                    } else {
+                        int end = (i + 1) * eachNum;
+                        list = mContactList.subList(begin, end);
+                    }
+
+                    android.util.Log.d(TAG, "account name:" + account.name + " account type:"
+                            + account.type);
+                    android.util.Log.d(TAG, "list size:" + list.size());
+
+                    LocalContactsManager.getInstance().batchAddContacts(list, account);
+                }
+            }
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            android.util.Log.i(TAG, "contact sync...");
+            importContact(selectedAccounts);
+            return true;
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            mImportTask = null;
+
+            Log.d(TAG, "import contact list end");
+            if (m_progressDlg.isShowing()) {
+                m_progressDlg.dismiss();
+            }
+
+            Intent intent = new Intent();
+            intent.putParcelableArrayListExtra("accounts", selectedAccounts);
+            setResult(RESULT_OK, intent);
+
+            finish();
+        }
+
+        @Override
+        protected void onCancelled() {
+            mImportTask = null;
+            Log.e(TAG, "import task cancelled");
+        }
+    }
+
+    private ImportTask mImportTask;
+
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
@@ -124,14 +242,18 @@ public class AccountsBindActivity extends Activity implements OnClickListener {
                         ConfigHelper.CONFIG_KEY_SYNC_MODE, ConfigHelper.SYNC_MODE_TWO_WAY);
                 ConfigHelper.getInstance(getApplicationContext()).commit();
 
+                if (mImportTask != null) {
+                    Log.i(TAG, "importing...");
+                    return;
+                }
+
                 ArrayList<MyAccount> selectedAccounts = (ArrayList<MyAccount>)mAccountsAdapter.getSelectAccountList();
 
+                mImportTask = new ImportTask(selectedAccounts);
+                mImportTask.execute();
 
-                Log.i(TAG, "finish account bind");
-                Intent intent = new Intent();
-                intent.putParcelableArrayListExtra("accounts", selectedAccounts);
-                setResult(RESULT_OK, intent);
-                finish();
+                m_progressDlg = ProgressDialog.show(this, "", "正在导入选中帐号联系人...");
+                m_progressDlg.setCancelable(false);
                 break;
             case R.id.btn_accounts_bind_cancel:
                 Log.i(TAG, "cancel bind");

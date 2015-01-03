@@ -47,64 +47,6 @@ public class MainActivity extends ActionBarActivity {
         SyncTask() {
 
         }
-        private void importContact(List<Account> accounts) {
-            if (accounts == null || accounts.size() == 0) {
-                return;
-            }
-            List<Contact> mContactList = new ArrayList<Contact>();
-            for (Account account : accounts) {
-                if (account.type.equals("sim")) {
-                    mContactList.addAll(LocalContactsManager.getInstance().getSimContacts());
-                } else {
-                    mContactList.addAll(LocalContactsManager.getInstance().getAllContactsListByAccount(account));
-                }
-            }
-            Log.d(TAG, "before crc, add contact size:" + mContactList.size());
-            if (mContactList.size() < 1) {
-                Log.d(TAG, "import account contacts complete");
-            }
-            Account account = Utils.getCurrentAccount();
-            List<Contact> syncAccountContacts = LocalContactsManager.getInstance().getAllContactsListByAccount(account);
-
-            Log.d(TAG, "syc account contact size:" + syncAccountContacts.size());
-            List<Long> contactCrcList = new ArrayList<Long>();
-            for (Contact contact : syncAccountContacts) {
-                contactCrcList.add(contact.generateProperCRC());
-            }
-            // crc去重,不比较头像，是否收藏，分组
-            Iterator<Contact> ite = mContactList.iterator();
-            while (ite.hasNext()) {
-                Contact addContact = ite.next();
-                long crc = addContact.generateProperCRC();
-                if (contactCrcList.contains(crc)) {
-                    ite.remove();
-                }
-            }
-            Log.d(TAG, "after crc, add contact size:" + mContactList.size());
-
-            if (Utils.isBindedAccountExist(account) && mContactList.size() > 0) {
-                final int eachNum = 100;
-                int count = mContactList.size();
-                int times = count / eachNum + 1;
-
-                for (int i = 0; i < times; i++) {
-                    List<Contact> list;
-                    int begin = i * eachNum;
-                    if (i == times - 1) {
-                        list = mContactList.subList(begin, count);
-                    } else {
-                        int end = (i + 1) * eachNum;
-                        list = mContactList.subList(begin, end);
-                    }
-
-                    Log.d(TAG, "account name:" + account.name + " account type:"
-                            + account.type);
-                    Log.d(TAG, "list size:" + list.size());
-
-                    LocalContactsManager.getInstance().batchAddContacts(list, account);
-                }
-            }
-        }
 
         @Override
         protected Boolean doInBackground(Void... params) {
@@ -114,7 +56,6 @@ public class MainActivity extends ActionBarActivity {
                 cn.com.nd.momo.api.util.Log.w(TAG, "momo account is't exist, please add momo account first!!!");
                 return false;
             }
-            importContact(MainActivity.this.selectedAccounts);
             ContactSyncManager.getInstance().syncContacts();
             return true;
         }
