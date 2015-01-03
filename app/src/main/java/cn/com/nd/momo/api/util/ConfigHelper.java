@@ -4,6 +4,8 @@ package cn.com.nd.momo.api.util;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import java.util.Set;
+
 /**
  * 配置项管理类
  * 
@@ -75,9 +77,12 @@ public class ConfigHelper {
 
     //上传用源文件
     public static final String CONFIG_KEY_FULL_SIZE = "upload_full_size";
-    
+
+    public static final String CONFIG_KEY_MOMO_ACCOUNT_CREATED = "momo_account_created";
     // 导入帐号选择
     public static final String CONFIG_KEY_IMPORT_ACCOUNTS = "import_accounts";
+
+    public static final String CONFIG_KEY_SELECTED_ACCOUNTS = "selected_accounts";
 
     // momosns
     static public final int PHOTO_UPLOAD_COMPRESS = 780;
@@ -174,6 +179,15 @@ public class ConfigHelper {
 
     public void saveBooleanKey(String key, boolean value) {
         mEditor.putBoolean(key, value);
+        mEditor.commit();
+    }
+
+    public Set<String> loadStringSetKey(String key, Set<String> defValue) {
+        return mSettings.getStringSet(key, defValue);
+    }
+
+    public void saveStringSetKey(String key, Set<String> s) {
+        mEditor.putStringSet(key, s);
         mEditor.commit();
     }
 

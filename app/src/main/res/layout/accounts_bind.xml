@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="vertical"
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent"
+  android:background="@color/white">
+  
+  	<!-- title -->
+  	<TextView android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:gravity="center"
+		android:background="@drawable/title_background"
+		android:textColor="@color/white"
+		android:textSize="18sp"
+		android:text="选择导入联系人的帐号"/>
+  
+  	<LinearLayout android:orientation="vertical"
+  		android:layout_width="fill_parent"
+  		android:layout_height="1dip"
+  		android:layout_weight="1">
+	  	
+	  	<!-- message -->
+	  	<TextView android:layout_width="fill_parent"
+		  	android:layout_height="wrap_content"
+		  	android:padding="20dip"
+		  	android:paddingLeft="20dip"
+		  	android:paddingRight="20dip"
+		  	android:paddingTop="10dip"
+		  	android:paddingBottom="10dip"
+		  	android:textSize="20sp"
+		  	android:background="@color/background_color"
+		  	android:textColor="@color/font_gray"
+		  	android:visibility="gone"
+		  	android:text="选择您想要导入联系人的帐号，以保证可以与您的亲朋好友进行MO聊。"/>
+		  	
+		  	<ListView android:id="@+id/account_list"
+		  		android:layout_width="fill_parent"
+		  		android:layout_height="fill_parent">
+		  	</ListView>
+		  	
+	</LinearLayout>
+  
+  	<!-- OK/Cancel -->
+  	<LinearLayout 
+  		android:layout_width="fill_parent"
+	  	android:layout_height="wrap_content"
+	  	android:padding="10dip"
+	  	android:background="@drawable/title_background" >
+  		
+  		<Button android:id="@+id/btn_accounts_bind_ok"
+  			android:layout_width="fill_parent"
+  			android:layout_height="wrap_content"
+  			android:layout_weight = "1"
+  			android:layout_centerVertical="true"
+  			style="@style/WhiteButtonView"
+  			android:paddingLeft="30dip"
+  			android:paddingRight="30dip"
+  			android:paddingTop="5dip"
+  			android:paddingBottom="5dip"
+  			android:textSize="20sp"
+  			android:textColor="@color/black"
+  			android:text="@string/txt_ok"/>
+  			
+  		<Button android:id="@+id/btn_accounts_bind_cancel"
+  			android:layout_width="fill_parent"
+  			android:layout_height="wrap_content"
+  			android:layout_weight = "1"
+  			android:layout_centerVertical="true"
+  			style="@style/WhiteButtonView"
+  			android:paddingLeft="30dip"
+  			android:paddingRight="30dip"
+  			android:paddingTop="5dip"
+  			android:paddingBottom="5dip"
+  			android:layout_marginLeft="10dip"
+  			android:textSize="20sp"
+  			android:textColor="@color/black"
+  			android:text="@string/txt_cancel"/>
+  			
+  </LinearLayout>
+  	
+  
+</LinearLayout>

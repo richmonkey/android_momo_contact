@@ -79,7 +79,7 @@ public class LocalContactsManager {
     }
 
     public List<Contact> getAllContactsList() {
-        return getAllContactsListByAccount(false);
+        return getAllContactsListByAccount(true);
     }
 
     public List<Contact> getAllContactsListWithoutAccount() {
@@ -95,16 +95,7 @@ public class LocalContactsManager {
         try {
             String queryFilterStr = "";
             if (withAccout) {
-                
                 Account account = Utils.getCurrentAccount();
-                /*
-                if (account == null) {
-                    account = Utils.resetAccount(null);
-                }
-                if (!Utils.isBindedAccountExist(account)) {
-                    return contactsList;
-                }
-                */
                 queryFilterStr = Utils.getAccountQueryFilterStr(account);
             }
             String andStr = queryFilterStr.length() > 0 ? " and " : "";

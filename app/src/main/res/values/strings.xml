@@ -5,5 +5,7 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="title_activity_verify">校验</string>
-
+    <string name="txt_phone">电话</string>
+    <string name="txt_cancel">取消</string>
+    <string name="txt_ok">确定</string>
 </resources>

@@ -28,5 +28,6 @@ public class MMApplication extends Application {
 
         ContactDatabaseHelper.initDatabase(this.getApplicationContext());
         Utils.saveGlobleContext(this.getApplicationContext());
+        GlobalUserInfo.setAppContext(this);
     }
 }

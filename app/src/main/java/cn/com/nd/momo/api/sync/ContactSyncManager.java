@@ -85,6 +85,11 @@ public class ContactSyncManager {
      * 同步联系人
      */
     public void syncContacts() {
+        Account account = Utils.getCurrentAccount();
+        if (!Utils.isBindedAccountExist(account)) {
+            Log.w(TAG, "momo account is't exist, please add momo account first!!!");
+            return;
+        }
         needRestoreContactMap.clear();
         updateLocalContactsToServer();
         updateMoMoContactsFromServer();
@@ -129,20 +134,7 @@ public class ContactSyncManager {
         Log.d(TAG, "local contact id:" + logPhoneCid(localContactsList));
         if (momoSize < 1 && localSize < 1)
             return;
-        if(localSize < 1) {
-            Account account = Utils.getCurrentAccount();
-            Account momoAccount = Utils.getMoMoAccount();
-            if(account != null && momoAccount != null && account.equals(momoAccount)) {
-                boolean isExist = Utils.isBindedAccountExist(account);
-                if(!isExist) {
-                    account = Utils.resetAccount(null);
-                    if(account != null && account.equals(momoAccount)) {
-                        batchReWriteMoMoContactListToLocal();
-                        return;
-                    }
-                }
-            }
-        }
+
         List<Long> toDeleteToServerList = new ArrayList<Long>();
         List<Contact> toUpdateToServerList = new ArrayList<Contact>();
         List<Contact> toAddToServerList = new ArrayList<Contact>();

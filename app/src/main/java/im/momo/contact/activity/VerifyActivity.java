@@ -13,6 +13,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import cn.com.nd.momo.manager.GlobalUserInfo;
 import im.momo.contact.R;
 import im.momo.contact.MainActivity;
 import im.momo.contact.Token;
@@ -90,6 +91,8 @@ public class VerifyActivity extends AccountActivity implements TextView.OnEditor
                         u.number = phone;
                         u.zone = "86";
                         UserDB.getInstance().addUser(u);
+                        //中国区不加区号 和momo保持兼容
+                        GlobalUserInfo.setPhoneNumber(phone);
 
                         Intent intent = new Intent(VerifyActivity.this, MainActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

@@ -5,4 +5,13 @@
         <!-- Customize your theme here. -->
     </style>
 
+    <!-- white button -->
+    <style name="WhiteButtonView" parent="@android:style/Widget.Button">
+        <item name="android:background">@drawable/btn_bg_blue</item>
+        <item name="android:paddingTop">12dip</item>
+        <item name="android:paddingBottom">12dip</item>
+        <item name="android:paddingLeft">5dip</item>
+        <item name="android:paddingRight">5dip</item>
+    </style>
+
 </resources>

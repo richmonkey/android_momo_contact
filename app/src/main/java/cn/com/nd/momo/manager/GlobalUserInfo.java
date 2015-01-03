@@ -37,7 +37,7 @@ public class GlobalUserInfo {
     // application context
     static public Context mAppContext = null;
 
-    // contact id for myself
+    // contact id for myselfmAppContext
     static public long MY_CONTACT_ID = 0;
 
     // my avatar
@@ -55,10 +55,6 @@ public class GlobalUserInfo {
     static private String mSessionID = ""; // session id
 
     static private String mZoneCode = DEFAULT_ZONE_CODE;
-
-    static private String mOAuthKey = "";
-
-    static private String mOAuthSecret = "";
 
     static private int mResetPassword = 0;
 
@@ -165,25 +161,6 @@ public class GlobalUserInfo {
         cHelper.commit();
     }
 
-    public static void setTempOAuth(int resetPassword, String OAuthKey, String OAuthSecret,
-            String zoneCode,
-            String mobile) {
-        mResetPassword = resetPassword;
-        if (OAuthKey != null && !"".equals(OAuthKey)) {
-            mOAuthKey = OAuthKey;
-            Log.d(TAG, "OAuthKey: " + OAuthKey);
-        }
-        if (OAuthSecret != null && !"".equals(OAuthSecret)) {
-            mOAuthSecret = OAuthSecret;
-            Log.d(TAG, "OAuthSecret: " + OAuthSecret);
-        }
-        if (zoneCode != null && !"".equals(zoneCode)) {
-            mZoneCode = zoneCode;
-        }
-        if (mobile != null && !"".equals(mobile)) {
-            mPhoneNumber = mobile;
-        }
-    }
 
     public static void cancelResetPassword() {
         mResetPassword = 0;
@@ -191,14 +168,6 @@ public class GlobalUserInfo {
 
     public static int getNeedResetPassword() {
         return mResetPassword;
-    }
-
-    public static String getOAuthKey() {
-        return mOAuthKey;
-    }
-
-    public static String getOAuthSecret() {
-        return mOAuthSecret;
     }
 
     public static String getQName() {
@@ -241,54 +210,7 @@ public class GlobalUserInfo {
         return imei;
     }
 
-    public static void setOAuthToken(String uid, String OAuthKey, String OAuthSecret,
-            String userName, String avatar, String qName, String status, String zoneCode,
-            String mobile) {
-        ConfigHelper cHelper = ConfigHelper.getInstance(mAppContext);
 
-        if (uid != null && !"".equals(uid)) {
-            mUID = uid;
-            cHelper.saveKey(ConfigHelper.CONFIG_KEY_UID, uid);
-        }
-        if (OAuthKey != null && !"".equals(OAuthKey)) {
-            mOAuthKey = OAuthKey;
-            cHelper.saveKey(ConfigHelper.CONFIG_OAUTH_KEY, OAuthKey);
-            Log.d(TAG, "OAuthKey: " + OAuthKey);
-        }
-        if (OAuthSecret != null && !"".equals(OAuthSecret)) {
-            mOAuthSecret = OAuthSecret;
-            cHelper.saveKey(ConfigHelper.CONFIG_OAUTH_SECRET, OAuthSecret);
-            Log.d(TAG, "OAuthSecret: " + OAuthSecret);
-        }
-        if (userName != null && !"".equals(userName)) {
-            mNAME = userName;
-            cHelper.saveKey(ConfigHelper.CONFIG_KEY_REALNAME, userName);
-        }
-        /**
-         * fix avatar remains after logout
-         */
-        if (avatar != null && avatar.length() > 0) {
-            setAvatar(avatar);
-        }
-
-        if (qName != null && !"".equals(qName)) {
-            mQName = qName;
-            cHelper.saveKey(ConfigHelper.CONFIG_QNAME, qName);
-        }
-        if (status != null && !"".equals(status)) {
-            mStatus = status;
-            cHelper.saveKey(ConfigHelper.CONFIG_USER_STATUS, status);
-        }
-        if (zoneCode != null && !"".equals(zoneCode)) {
-            mZoneCode = zoneCode;
-            cHelper.saveKey(ConfigHelper.CONFIG_KEY_ZONE_CODE, zoneCode);
-        }
-        if (mobile != null && !"".equals(mobile)) {
-            mPhoneNumber = mobile;
-            cHelper.saveKey(ConfigHelper.CONFIG_KEY_PHONE_NUMBER, mobile);
-        }
-        cHelper.commit();
-    }
 
     // TODO WAITIING FOR DELETE
     public static String getSessionID() {
@@ -313,23 +235,9 @@ public class GlobalUserInfo {
             mNAME = cHelper.loadKey(ConfigHelper.CONFIG_KEY_REALNAME);
             mUID = cHelper.loadKey(ConfigHelper.CONFIG_KEY_UID);
 
-            mOAuthKey = cHelper.loadKey(ConfigHelper.CONFIG_OAUTH_KEY);
-            mOAuthSecret = cHelper.loadKey(ConfigHelper.CONFIG_OAUTH_SECRET);
             mQName = cHelper.loadKey(ConfigHelper.CONFIG_QNAME);
 
             mStatus = cHelper.loadKey(ConfigHelper.CONFIG_USER_STATUS);
-
-            // 已成功登录，需设置Api认证信息
-            OAuthInfo oAuthInfo = new OAuthInfo();
-            oAuthInfo.setUid(mUID);
-            oAuthInfo.setFinalKey(mOAuthKey);
-            oAuthInfo.setFinalSecret(mOAuthSecret);
-            oAuthInfo.setMobile(mPhoneNumber);
-            oAuthInfo.setStatus(mStatus);
-            oAuthInfo.setUserName(mNAME);
-            oAuthInfo.setQueueName(mQName);
-            MoMoHttpApi.setOAuthInfo(oAuthInfo);
-
         } else {
             mLoginStatus = LOGIN_STATUS_UNLOGIN;
         }

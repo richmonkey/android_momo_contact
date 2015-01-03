@@ -43,6 +43,7 @@ import android.widget.Toast;
 import cn.com.nd.momo.api.types.MyAccount;
 import cn.com.nd.momo.api.types.UserList;
 import cn.com.nd.momo.manager.GlobalUserInfo;
+import im.momo.contact.Token;
 
 /**
  * 通用工具类，以static方式提供，调用者不能继承使用，也不能实例化。
@@ -287,6 +288,8 @@ public final class Utils {
     }
 
     public static Account getCurrentAccount() {
+        return getMoMoAccount();
+        /*
         if (null == currentAccount) {
             String accountName = config.loadKey(ConfigHelper.CONFIG_KEY_BINDED_ACCOUNT_NAME);
             String accountType = config.loadKey(ConfigHelper.CONFIG_KEY_BINDED_ACCOUNT_TYPE);
@@ -311,7 +314,7 @@ public final class Utils {
             config.removeKey(ConfigHelper.CONFIG_KEY_BINDED_ACCOUNT_NAME);
             config.removeKey(ConfigHelper.CONFIG_KEY_BINDED_ACCOUNT_TYPE);
         }
-        return currentAccount;
+        return currentAccount;*/
     }
 
     /**
@@ -340,44 +343,6 @@ public final class Utils {
         return isExist;
     }
 
-    public static Account resetAccount(Activity activity) {
-        Account account = null;
-        account = getVendorAccount();
-        if(account == null) {
-            // 去除创建momo的帐号
-            if (hasIceCream()) {
-                try {
-                    String accountName = GlobalUserInfo.getPhoneNumber();
-    
-                    String accountType = GlobalUserInfo.MOMO_ACCOUNT_TYPE;
-                    account = new Account(accountName, accountType);
-                    if (!Utils.isBindedAccountExist(account)) {
-                        Bundle bundle = Utils.addAccount(activity);
-                        accountName = bundle.getString(AccountManager.KEY_ACCOUNT_NAME);
-                        accountType = bundle.getString(AccountManager.KEY_ACCOUNT_TYPE);
-                        Log.d("Utils", "accountName:" + accountName + " accountType:" +
-                                accountType
-                                + " bundle:" + bundle.toString());
-                        if (accountName == null ||
-                                !accountName.equals(GlobalUserInfo.getPhoneNumber())) {
-                            account = new Account(MyAccount.ACCOUNT_MOBILE_NAME,
-                                    MyAccount.ACCOUNT_MOBILE_TYPE);
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-    
-                }
-            }
-            if(account == null) {
-                account = new Account(MyAccount.ACCOUNT_MOBILE_NAME, MyAccount.ACCOUNT_MOBILE_TYPE);
-            }
-        } else {
-            account = new Account(MyAccount.ACCOUNT_MOBILE_NAME, MyAccount.ACCOUNT_MOBILE_TYPE);
-        }
-        saveCurrentAccount(account);
-        return account;
-    }
     
     public static Bundle addAccount(Activity activity) {
         mBundle = null;
@@ -387,9 +352,9 @@ public final class Utils {
         Bundle bundle = new Bundle();
         bundle.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
         String[] features = new String[] {
-                GlobalUserInfo.getUID()
+                GlobalUserInfo.getPhoneNumber()
         };
-        accountManager.addAccount(accountType, GlobalUserInfo.getOAuthKey(), features, bundle,
+        accountManager.addAccount(accountType, Token.getInstance().accessToken, features, bundle,
                 activity,
                 new AccountManagerCallback<Bundle>() {
                     @Override
@@ -402,25 +367,6 @@ public final class Utils {
                     }
                 }, null);
         return bundle;
-    }
-
-    public static void saveCurrentAccount(Account account) {
-        if (account == null) {
-            account = new Account(MyAccount.ACCOUNT_MOBILE_NAME, MyAccount.ACCOUNT_MOBILE_TYPE);
-        }
-        config.saveKey(ConfigHelper.CONFIG_KEY_BINDED_ACCOUNT_NAME, account.name);
-        config.saveKey(ConfigHelper.CONFIG_KEY_BINDED_ACCOUNT_TYPE, account.type);
-        config.commit();
-        currentAccount = account;
-
-        // if (null != account) {
-        // config.saveKey(ConfigHelper.CONFIG_KEY_BINDED_ACCOUNT_NAME,
-        // account.name);
-        // config.saveKey(ConfigHelper.CONFIG_KEY_BINDED_ACCOUNT_TYPE,
-        // account.type);
-        // config.commit();
-        // currentAccount = account;
-        // }
     }
 
     public static List<MyAccount> getAccounts() {
