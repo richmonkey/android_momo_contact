@@ -40,6 +40,8 @@ import android.telephony.PhoneNumberUtils;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.widget.Toast;
+
+import cn.com.nd.momo.api.sync.LocalContactsManager;
 import cn.com.nd.momo.api.types.MyAccount;
 import cn.com.nd.momo.api.types.UserList;
 import cn.com.nd.momo.manager.GlobalUserInfo;
@@ -385,7 +387,7 @@ public final class Utils {
         for (Account acc : accounts) {
             Log.d("Utils", "account name:" + acc.name + " type:" + acc.type);
             MyAccount eachAccount = new MyAccount(acc.name, acc.type);
-            int count = getContactCountByAccount(eachAccount);
+            int count = LocalContactsManager.getInstance().getContactCountByAccount(eachAccount);
             for (String contactAccountType : authorityAccountTypes) {
                 if (contactAccountType.equals(acc.type) || count > 0) {
                     eachAccount.setCount(count);
@@ -396,7 +398,7 @@ public final class Utils {
         }
 
         MyAccount mobileCount = MyAccount.MOBILE_ACCOUNT;
-        int count = getContactCountByAccount(mobileCount);
+        int count = LocalContactsManager.getInstance().getContactCountByAccount(mobileCount);
         mobileCount.setCount(count);
         accountList.add(mobileCount);
         // putMaxCountFirst(accountList);
@@ -407,29 +409,6 @@ public final class Utils {
         currentAccount = null;
     }
 
-    public static int getContactCountByAccount(Account account) {
-        Cursor cursor = null;
-        int count = 0;
-        if (account == null) {
-            return count;
-        }
-        String filter = Utils.getAccountQueryFilterStr(account);
-        String[] projection = {
-                BaseColumns._COUNT
-        };
-        String andFilterStr = filter.length() > 0 ? "AND " + filter : "";
-        String selection = RawContacts.DELETED + " = 0 " + andFilterStr;
-        cursor = mContext.getContentResolver().query(RawContacts.CONTENT_URI,
-                projection, selection, null, null);
-        if (cursor.moveToNext())
-            count = cursor.getInt(0);
-        if (null != cursor) {
-            cursor.close();
-            cursor = null;
-        }
-        return count;
-    }
-    
     // android 2.2 begin
     private static final int FLAG_EXTERNAL_STORAGE = 0x00040000;
 

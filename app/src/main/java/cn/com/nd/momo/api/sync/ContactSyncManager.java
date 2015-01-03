@@ -16,8 +16,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.accounts.Account;
-import android.content.Context;
-import cn.com.nd.momo.api.SyncContactApi;
 import cn.com.nd.momo.api.SyncContactHttpApi;
 import cn.com.nd.momo.api.exception.MoMoException;
 import cn.com.nd.momo.api.types.Address;
@@ -27,7 +25,7 @@ import cn.com.nd.momo.api.types.MyAccount;
 import cn.com.nd.momo.api.util.ConfigHelper;
 import cn.com.nd.momo.api.util.Log;
 import cn.com.nd.momo.api.util.Utils;
-import cn.com.nd.momo.manager.GlobalUserInfo;
+
 
 
 /**

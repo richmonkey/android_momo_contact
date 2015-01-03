@@ -31,8 +31,8 @@ import android.widget.CheckBox;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import cn.com.nd.momo.api.sync.LocalContactsManager;
 import im.momo.contact.R;
-import cn.com.nd.momo.api.SyncContactApi;
 import cn.com.nd.momo.api.types.MyAccount;
 import cn.com.nd.momo.api.util.ConfigHelper;
 import cn.com.nd.momo.api.util.Log;
@@ -105,10 +105,10 @@ public class AccountsBindActivity extends Activity implements OnClickListener {
             }
         }
         MyAccount simAccount = new MyAccount("sim卡", "sim");
-        simAccount.setCount(SyncContactApi.getInstance(getApplicationContext())
-                .getSimContactsCount());
+        int count = LocalContactsManager.getInstance().getSimContactsCount();
+        simAccount.setCount(count);
         mArrayAccount.add(simAccount);
-        int count = Utils.getContactCountByAccount(currentAccount);
+        count = LocalContactsManager.getInstance().getContactCountByAccount(currentAccount);
         MyAccount syncAccount = new MyAccount(currentAccount.name, currentAccount.type);
         syncAccount.setCount(count);
         mArrayAccount.add(0, syncAccount);

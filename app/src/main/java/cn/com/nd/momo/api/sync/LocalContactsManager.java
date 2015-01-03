@@ -78,6 +78,30 @@ public class LocalContactsManager {
         return instance;
     }
 
+
+    public int getContactCountByAccount(Account account) {
+        Cursor cursor = null;
+        int count = 0;
+        if (account == null) {
+            return count;
+        }
+        String filter = Utils.getAccountQueryFilterStr(account);
+        String[] projection = {
+                BaseColumns._COUNT
+        };
+        String andFilterStr = filter.length() > 0 ? "AND " + filter : "";
+        String selection = RawContacts.DELETED + " = 0 " + andFilterStr;
+        cursor = mContext.getContentResolver().query(RawContacts.CONTENT_URI,
+                projection, selection, null, null);
+        if (cursor.moveToNext())
+            count = cursor.getInt(0);
+        if (null != cursor) {
+            cursor.close();
+            cursor = null;
+        }
+        return count;
+    }
+
     public List<Contact> getAllContactsList() {
         return getAllContactsListByAccount(true);
     }
