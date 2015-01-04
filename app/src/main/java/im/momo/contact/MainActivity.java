@@ -32,6 +32,12 @@ import cn.com.nd.momo.api.util.ConfigHelper;
 import cn.com.nd.momo.api.util.Utils;
 import cn.com.nd.momo.manager.GlobalUserInfo;
 import im.momo.contact.activity.AccountsBindActivity;
+import im.momo.contact.api.IMHttp;
+import im.momo.contact.api.IMHttpFactory;
+import im.momo.contact.api.body.PostAuthRefreshToken;
+import im.momo.contact.model.ContactDB;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -118,6 +124,8 @@ public class MainActivity extends ActionBarActivity {
         };
         ContentResolver resolver = this.getApplicationContext().getContentResolver();
         resolver.registerContentObserver(ContactsContract.Contacts.CONTENT_VCARD_URI, false, contentObserver);
+
+        refreshToken();
 
         boolean created = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_MOMO_ACCOUNT_CREATED, false);
         Account account = Utils.getCurrentAccount();
@@ -246,6 +254,34 @@ public class MainActivity extends ActionBarActivity {
                     }
                 }, null);
         return bundle;
+    }
+
+    private void refreshToken() {
+        PostAuthRefreshToken refreshToken = new PostAuthRefreshToken();
+        refreshToken.refreshToken = Token.getInstance().refreshToken;
+        IMHttp imHttp = IMHttpFactory.Singleton();
+        imHttp.postAuthRefreshToken(refreshToken)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Action1<Token>() {
+                    @Override
+                    public void call(Token token) {
+                        onTokenRefreshed(token);
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        Log.i(TAG, "refresh token error:" + throwable);
+                    }
+                });
+    }
+
+    protected void onTokenRefreshed(Token token) {
+        Token t = Token.getInstance();
+        t.accessToken = token.accessToken;
+        t.refreshToken = token.refreshToken;
+        t.expireTimestamp = token.expireTimestamp;
+        t.save();
+        Log.i(TAG, "token refreshed");
     }
 
 }
