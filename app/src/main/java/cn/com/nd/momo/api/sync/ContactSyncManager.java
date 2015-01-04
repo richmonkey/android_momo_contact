@@ -16,6 +16,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.accounts.Account;
+import android.text.TextUtils;
+
 import cn.com.nd.momo.api.SyncContactHttpApi;
 import cn.com.nd.momo.api.exception.MoMoException;
 import cn.com.nd.momo.api.types.Address;
@@ -25,7 +27,7 @@ import cn.com.nd.momo.api.types.MyAccount;
 import cn.com.nd.momo.api.util.ConfigHelper;
 import cn.com.nd.momo.api.util.Log;
 import cn.com.nd.momo.api.util.Utils;
-
+import android.util.Base64;
 
 
 /**
@@ -92,25 +94,6 @@ public class ContactSyncManager {
         updateLocalContactsToServer();
         updateMoMoContactsFromServer();
         Log.d(TAG, "sync end");
-    }
-    
-    public void backAddMoMoAcountSync() {
-        List<Contact> momoContactsList = momoContactsManager.getAllContactsIdList();
-        int momoSize = momoContactsList.size();
-        List<Contact> localContactsList = localContactsManager.getAllContactsList();
-        int localSize = localContactsList.size();
-        if(momoSize > 0 && localSize < 1) {
-            Account account = Utils.getCurrentAccount();
-            Account momoAccount = Utils.getMoMoAccount();
-            Log.i(TAG, "backAddMoMoAcountSync");
-            if(account != null && momoAccount != null && account.equals(momoAccount)) {
-                boolean isExist = Utils.isBindedAccountExist(account);
-                Log.i(TAG, "momo account exist:" + isExist);
-                if(isExist) {
-                    batchReWriteMoMoContactListToLocal();
-                }
-            }
-        }
     }
 
     /**
@@ -425,23 +408,6 @@ public class ContactSyncManager {
 
         }
     }
-    
-    private void batchReaddContactDetailsToLocal(List<Contact> contactList) {
-        if (syncManager.needStopSync || null == contactList || contactList.size() < 1) {
-            return;
-        }
-        Log.d(TAG, "正要写入手机：" + contactList.size());
-        List<Contact> resultList = localContactsManager.batchAddContacts(contactList);
-        if (null != resultList && resultList.size() > 0) {
-            Log.d(TAG, "正要写入momo：" + resultList.size());
-            boolean result = momoContactsManager.batchReaddContacts(resultList, true);
-            Log.d(TAG, "写入momo結果：" + result);
-            if (result) {
-                batchInsertAvatar(resultList);
-            }
-        }
- 
-    }
 
     private void saveContactProperties(Contact contact) {
         if (null == contact)
@@ -620,52 +586,10 @@ public class ContactSyncManager {
                     long contactId = contact.getContactId();
                     localContact.setContactId(contactId);
                     saveContactProperties(localContact);
-
                     restoreContactProperties(contact);
-                    Avatar avatar = contact.getAvatar();
-                    String avatarURL = avatar.getServerAvatarURL();
-                    if (!isNew) { // 更新联系人时，判断是否要下头像，不需要情况时把原库中对应头像取出。
-                        if (null != avatarURL && avatarURL.length() > 0 && !needForceDownloadAvatar) {
-                            momoContactsManager = MoMoContactsManager.getInstance();
-                            Contact momoContact = momoContactsManager.getContactById(contactId);
-                            Avatar momoAvatar = momoContact.getAvatar();
-                            if (null != momoAvatar) {
-                                String url = momoAvatar.getServerAvatarURL();
-                                if (url == null || momoAvatar.getMomoAvatarImage() == null) {
-                                    contact.setNeedDownloadAvatar(true);
-                                } else if (!url.equalsIgnoreCase(avatarURL)) {
-                                    contact.setNeedDownloadAvatar(true);
-                                }
-                            } else {
-                                contact.setNeedDownloadAvatar(true);
-                            }
-                            if (!contact.isNeedDownloadAvatar()) {
-                                avatar.setMomoAvatarImage(momoAvatar.getMomoAvatarImage());
-                            }
-                        }
-                    } else {
-                        contact.setNeedDownloadAvatar(true);
-                    }
                 }
             }
 
-            //
-            // JSONArray jsonArray =
-            // SyncContactHttpApi.getContactDetailsList(list);
-            // if (jsonArray != null) {
-            // int length = jsonArray.length();
-            // for (int i = 0; i < length; ++i) {
-            // JSONObject info = jsonArray.getJSONObject(i);
-            // Contact localContact = list.get(i);
-            // long phoneCid = localContact.getPhoneCid();
-            // long contactId = info.getLong(KEY_ID);
-            // localContact.setContactId(contactId);
-            // saveContactProperties(localContact);
-            // info.put("phoneCid", phoneCid);
-            // Contact contact = convertJsonToContact(info, isNew);
-            // contactsList.add(contact);
-            // }
-            // }
         } catch (MoMoException e) {
             e.printStackTrace();
         }
@@ -751,7 +675,7 @@ public class ContactSyncManager {
             String firstName = info.getString("given_name");
             String nickName = info.getString("nickname");
             String birthDayStr = info.getString("birthday");
-            String avatarURL = info.getString("avatar");
+            String avatarB64 = info.getString("avatar_b64");
             String organization = info.getString("organization");
             String department = info.getString("department");
             String title = info.getString("title");
@@ -775,30 +699,12 @@ public class ContactSyncManager {
                     lunarBirthday, needLunar, animalSign, zodiac, health);
             contact.setModifyDate(modified);
             restoreContactProperties(contact);
-            Avatar avatar = new Avatar(-1, avatarURL, null);
-            if (!isNew) { // 更新联系人时，判断是否要下头像，不需要情况时把原库中对应头像取出。
-                if (null != avatarURL && avatarURL.length() > 0 && !needForceDownloadAvatar) {
-                    momoContactsManager = MoMoContactsManager.getInstance();
-                    Contact momoContact = momoContactsManager.getContactById(contactId);
-                    Avatar momoAvatar = momoContact.getAvatar();
-                    if (null != momoAvatar) {
-                        String url = momoAvatar.getServerAvatarURL();
-                        if (url == null || momoAvatar.getMomoAvatarImage() == null) {
-                            contact.setNeedDownloadAvatar(true);
-                        } else if (!url.equalsIgnoreCase(avatarURL)) {
-                            contact.setNeedDownloadAvatar(true);
-                        }
-                    } else {
-                        contact.setNeedDownloadAvatar(true);
-                    }
-                    if (!contact.isNeedDownloadAvatar()) {
-                        avatar.setMomoAvatarImage(momoAvatar.getMomoAvatarImage());
-                    }
-                }
-            } else {
-                contact.setNeedDownloadAvatar(true);
+
+            if (!TextUtils.isEmpty(avatarB64)) {
+                byte[] image = Base64.decode(avatarB64, Base64.DEFAULT);
+                Avatar avatar = new Avatar(-1, null, image);
+                contact.setAvatar(avatar);
             }
-            contact.setAvatar(avatar);
 
             JSONArray emailArray = info.getJSONArray("emails");
             List<List<String>> emailsList = contact.convertJsonArrayToFieldList(emailArray);
@@ -1050,99 +956,6 @@ public class ContactSyncManager {
         return avatarByte;
     }
 
-
-    /**
-     * 当用户选择不同步时，将本地库拷到MOMO表里
-     */
-    public void syncLocalToMoMo() {
-        List<Contact> momoContactsList = momoContactsManager.getAllContactsIdList();
-        Collections.sort(momoContactsList, PhoneCIdComparator.getInstance());
-        int momoSize = momoContactsList.size();
-        Log.d(TAG, "all contacts on momo:" + momoSize);
-        Log.d(TAG, "momo contact id:" + logPhoneCid(momoContactsList));
-
-        List<Contact> localContactsList;
-        localContactsList = localContactsManager.getAllContactsListWithoutAccount();
-        int localSize = localContactsList.size();
-        Log.d(TAG, "all contacts on local:" + localSize);
-        Collections.sort(localContactsList, PhoneCIdComparator.getInstance());
-        Log.d(TAG, "local contact id:" + logPhoneCid(localContactsList));
-        if (momoSize < 1 && localSize < 1) {
-            Log.d(TAG, "sync local end.");
-            return;
-        }
-        if (momoSize == 0 && localSize > 0) {
-            addContactsToMoMo(localContactsList);
-            Log.d(TAG, "sync local end.");
-            return;
-        }
-        List<Contact> toDeleteToMOMOList = new ArrayList<Contact>();
-        List<Contact> toUpdateToMOMOList = new ArrayList<Contact>();
-        List<Contact> toAddToMOMOList = new ArrayList<Contact>();
-        int localIndex = 0;
-        int momoIndex = 0;
-        while (true) {
-            if (momoIndex == momoSize)
-                break;
-            if (localIndex == localSize)
-                break;
-            Contact localContact = localContactsList.get(localIndex);
-            long localPhoneCid = localContact.getPhoneCid();
-
-            Contact momoContact = momoContactsList.get(momoIndex);
-            long momoPhoneCid = momoContact.getPhoneCid();
-            if (localPhoneCid == momoPhoneCid) {
-                if (!momoContact.equals(localContact)) {
-                    localContact.setContactId(momoContact.getContactId());
-                    localContact.setModifyDate(momoContact.getModifyDate());
-                    String primePhoneNumber = momoContact.getPrimePhoneNumber();
-                    long uid = 0;
-                    if (localContact.hasSuchPrimePhoneNumber(primePhoneNumber)) {
-                        uid = momoContact.getUid();
-                    }
-                    localContact.setUid(uid);
-                    localContact.setContactCRC(String.valueOf(localContact.generateCRC()));
-                    toUpdateToMOMOList.add(localContact);
-                }
-                localIndex++;
-                momoIndex++;
-            } else if (momoPhoneCid < localPhoneCid) {
-                toDeleteToMOMOList.add(momoContact);
-                momoIndex++;
-            } else {
-                toAddToMOMOList.add(localContact);
-                localIndex++;
-            }
-        }
-        // 改变的
-        int toUpdateSize = toUpdateToMOMOList.size();
-        Log.d(TAG, "update to server: " + toUpdateSize);
-        if (toUpdateSize > 0) {
-            momoContactsManager.updateContacts(toUpdateToMOMOList);
-        }
-        // 新增的
-        if (localIndex < localSize) {
-            List<Contact> localContactsLeftList = localContactsList.subList(localIndex, localSize);
-            toAddToMOMOList.addAll(localContactsLeftList);
-        }
-        int toAddSize = toAddToMOMOList.size();
-        if (toAddSize > 0) {
-            addContactsToMoMo(toAddToMOMOList);
-        }
-        // 需要删除的
-        if (momoIndex < momoSize) {
-            toDeleteToMOMOList.addAll(momoContactsList.subList(momoIndex, momoSize));
-        }
-        momoContactsManager.batchDeleteContact(toDeleteToMOMOList);
-        toAddToMOMOList.clear();
-        toUpdateToMOMOList.clear();
-        toDeleteToMOMOList.clear();
-        toAddToMOMOList = null;
-        toUpdateToMOMOList = null;
-        toDeleteToMOMOList = null;
-        Log.d(TAG, "sync local end.");
-    }
-
     /**
      * 将手机联系人写到momo联系人
      */
@@ -1303,25 +1116,5 @@ public class ContactSyncManager {
         }
         return contactsList;
     }
-    
-    private void batchReWriteMoMoContactListToLocal() {
-        List<Contact> contactList = momoContactsManager.getAllContact();
-        if(contactList != null && contactList.size() > 0) {
-            int count = contactList.size();
-            if (count < 1)
-                return;
-            int times = count / COUNT_TO_RETRIEVE_CONTACTS + 1;
-            for (int i = 0; i < times; i++) {
-                List<Contact> list;
-                int begin = i * COUNT_TO_RETRIEVE_CONTACTS;
-                if (i == times - 1) {
-                    list = contactList.subList(begin, count);
-                } else {
-                    int end = (i + 1) * COUNT_TO_RETRIEVE_CONTACTS;
-                    list = contactList.subList(begin, end);
-                }
-                batchReaddContactDetailsToLocal(list);
-            }
-        }
-    }
+
 }

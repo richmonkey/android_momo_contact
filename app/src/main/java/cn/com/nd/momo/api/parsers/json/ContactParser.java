@@ -1,7 +1,12 @@
 
 package cn.com.nd.momo.api.parsers.json;
 
+import android.text.TextUtils;
+
 import java.util.List;
+
+import android.util.Base64;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -53,7 +58,8 @@ public class ContactParser extends AbstractParser<Contact> {
 
     private static final String KEY_RESIDENCE = "residence";
 
-    private static final String KEY_AVATAR = "avatar";
+    //private static final String KEY_AVATAR = "avatar";
+    private static final String KEY_AVATAR_B64 = "avatar_b64";
 
     private static final String KEY_ITEM_TYPE = "type";
 
@@ -99,9 +105,14 @@ public class ContactParser extends AbstractParser<Contact> {
         contact.setResidence(json.optString(KEY_RESIDENCE));
         contact.setNote(json.optString(KEY_NOTE));
         contact.setOrganization(json.optString(KEY_ORGANIZATION));
-        String strAvatar = json.optString(KEY_AVATAR);
-        Avatar avatar = new Avatar(0, strAvatar, null);
-        contact.setAvatar(avatar);
+
+        String avatarB64 = json.optString(KEY_AVATAR_B64);
+        if (!TextUtils.isEmpty(avatarB64)) {
+            byte[] image = Base64.decode(avatarB64, Base64.DEFAULT);
+            Avatar avatar = new Avatar(-1, null, image);
+            contact.setAvatar(avatar);
+        }
+
         if (!json.isNull(KEY_WEIBO_URLS)) {
             JSONArray weiboArray = json.optJSONArray(KEY_WEIBO_URLS);
             for (int i = 0; i < weiboArray.length(); ++i) {
@@ -180,9 +191,12 @@ public class ContactParser extends AbstractParser<Contact> {
         contact.setFirstName(json.getString(KEY_GIVEN_NAME));
         contact.setNickName(json.getString(KEY_NICKNAME));
         contact.setBirthday(json.getString(KEY_BIRTHDAY));
-        String strAvatar = json.getString(KEY_AVATAR);
-        Avatar avatar = new Avatar(0, strAvatar, null);
-        contact.setAvatar(avatar);
+        String avatarB64 = json.optString(KEY_AVATAR_B64);
+        if (!TextUtils.isEmpty(avatarB64)) {
+            byte[] image = Base64.decode(avatarB64, Base64.DEFAULT);
+            Avatar avatar = new Avatar(-1, null, image);
+            contact.setAvatar(avatar);
+        }
         contact.setOrganization(json.getString(KEY_ORGANIZATION));
         contact.setDepartment(json.getString(KEY_DEPARTMENT));
         contact.setJobTitle(json.getString(KEY_TITLE));
@@ -262,8 +276,15 @@ public class ContactParser extends AbstractParser<Contact> {
         json.put(KEY_RESIDENCE, t.getResidence());
         json.put(KEY_NOTE, t.getNote());
         json.put(KEY_ORGANIZATION, t.getOrganization());
-        if (t.getAvatar() != null)
-            json.put(KEY_AVATAR, t.getAvatar().getServerAvatarURL());
+
+        Avatar avatar = t.getAvatar();
+        if (avatar != null) {
+            byte[] image = avatar.getMomoAvatarImage();
+            if (image != null && image.length > 0) {
+                String avatarB64 = Base64.encodeToString(image, Base64.DEFAULT);
+                json.put(KEY_AVATAR_B64, avatarB64);
+            }
+        }
 
         // 微博列表
         if (t.getWebsiteList() != null) {
@@ -338,9 +359,17 @@ public class ContactParser extends AbstractParser<Contact> {
 
         json.put(KEY_NICKNAME, t.getNickName());
         json.put(KEY_BIRTHDAY, t.getBirthday());
-        if (t.getAvatar() != null && t.getAvatar().getServerAvatarURL() != null) {
-            json.put(KEY_AVATAR, t.getAvatar().getServerAvatarURL());
+
+        Avatar avatar = t.getAvatar();
+        if (avatar != null) {
+            byte[] image = avatar.getMomoAvatarImage();
+            if (image != null && image.length > 0) {
+                String avatarB64 = Base64.encodeToString(image, Base64.DEFAULT);
+                Log.i("contact", "avatar b64 size:" + avatarB64.length());
+                json.put(KEY_AVATAR_B64, avatarB64);
+            }
         }
+
         json.put(KEY_ORGANIZATION, t.getOrganization());
         json.put(KEY_DEPARTMENT, t.getDepartment());
         json.put(KEY_TITLE, t.getJobTitle());
