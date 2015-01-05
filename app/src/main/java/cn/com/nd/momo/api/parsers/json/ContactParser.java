@@ -15,9 +15,8 @@ import org.json.JSONObject;
 import cn.com.nd.momo.api.types.Address;
 import cn.com.nd.momo.api.types.Avatar;
 import cn.com.nd.momo.api.types.Contact;
-import cn.com.nd.momo.api.types.Weibo;
 
-public class ContactParser extends AbstractParser<Contact> {
+public class ContactParser {
     private static final String KEY_USER_ID = "user_id";
 
     private static final String KEY_NAME = "name";
@@ -94,94 +93,6 @@ public class ContactParser extends AbstractParser<Contact> {
 
     private static final String KEY_RELATIONS = "relations";
 
-    @Override
-    public Contact parse(JSONObject json) throws JSONException {
-        Contact contact = new Contact();
-        contact.setUid(json.optLong(KEY_USER_ID));
-        contact.setName(json.optString(KEY_NAME));
-        contact.setGender(json.optInt(KEY_GENDER));
-        contact.setAnimalSign(json.optString(KEY_ANIMAL_SIGN));
-        contact.setZodiac(json.optString(KEY_ZODIAC));
-        contact.setResidence(json.optString(KEY_RESIDENCE));
-        contact.setNote(json.optString(KEY_NOTE));
-        contact.setOrganization(json.optString(KEY_ORGANIZATION));
-
-        String avatarB64 = json.optString(KEY_AVATAR_B64);
-        if (!TextUtils.isEmpty(avatarB64)) {
-            byte[] image = Base64.decode(avatarB64, Base64.DEFAULT);
-            Avatar avatar = new Avatar(-1, null, image);
-            contact.setAvatar(avatar);
-        }
-
-        if (!json.isNull(KEY_WEIBO_URLS)) {
-            JSONArray weiboArray = json.optJSONArray(KEY_WEIBO_URLS);
-            for (int i = 0; i < weiboArray.length(); ++i) {
-                JSONObject object = weiboArray.optJSONObject(i);
-                String weiboType = object.optString(KEY_ITEM_TYPE);
-                String weiboValue = object.optString(KEY_ITEM_VALUE);
-                contact.getWebsiteLabelList().add(weiboType);
-                contact.getWebsiteList().add(weiboValue);
-                Weibo weibo = new Weibo(weiboType, weiboValue);
-                contact.getWeiboList().add(weibo);
-            }
-        }
-        contact.setUserLink(json.optInt(KEY_USER_LINK));
-        contact.setInMyContacts(json.optBoolean(KEY_IN_MY_CONTACT));
-        if (!json.isNull(KEY_EMAILS)) {
-            JSONArray emailsArray = json.optJSONArray(KEY_EMAILS);
-            for (int i = 0; i < emailsArray.length(); ++i) {
-                JSONObject email = emailsArray.optJSONObject(i);
-                String emailLabel = email.optString(KEY_ITEM_TYPE);
-                String emailValue = email.optString(KEY_ITEM_VALUE);
-                contact.getEmailLabelList().add(emailLabel);
-                contact.getEmailList().add(emailValue);
-            }
-        }
-        if (!json.isNull(KEY_TELS)) {
-            JSONArray telsArray = json.optJSONArray(KEY_TELS);
-            for (int i = 0; i < telsArray.length(); ++i) {
-                JSONObject tel = telsArray.optJSONObject(i);
-                String teLabel = tel.optString(KEY_ITEM_TYPE);
-                String telValue = tel.optString(KEY_ITEM_VALUE);
-                boolean telPref = tel.optBoolean(KEY_PHONE_ITEM_PREF);
-                if (telPref) {
-                    contact.getPhoneLabelList().add(0, teLabel);
-                    contact.getPhoneList().add(0, telValue);
-                    contact.setPrimePhoneNumber(telValue);
-                    contact.getPrefPhoneList().add(0, telPref);
-                } else {
-                    contact.getPhoneLabelList().add(teLabel);
-                    contact.getPhoneList().add(telValue);
-                    contact.getPrefPhoneList().add(telPref);
-                }
-            }
-        }
-        if (!json.isNull(KEY_BIRTHDAY)) {
-            String birthday = json.optString(KEY_BIRTHDAY);
-            if (null != birthday && birthday.length() > 0) {
-                contact.setBirthday(birthday);
-            }
-        }
-        if (!json.isNull(KEY_IS_HIDE_YEAR)) {
-            contact.setIsHideYear(json.optBoolean(KEY_IS_HIDE_YEAR));
-        }
-        if (!json.isNull(KEY_LUNAR_BDAY)) {
-            contact.setLunarBirthDay(json.optString(KEY_LUNAR_BDAY));
-        }
-        if (!json.isNull(KEY_IS_LUNAR)) {
-            contact.setNeedLunarBirthDay(json.optBoolean(KEY_IS_LUNAR));
-        }
-        if (!json.isNull(KEY_USER_STATUS)) {
-            contact.setUserStatus(json.optInt(KEY_USER_STATUS));
-        }
-        if (!json.isNull(KEY_COMPLETED)) {
-            contact.setCompleted(json.optInt(KEY_COMPLETED));
-        }
-        if (!json.isNull(KEY_SEND_CARD_COUNT)) {
-            contact.setSendCardCount(json.optInt(KEY_SEND_CARD_COUNT));
-        }
-        return contact;
-    }
 
     public Contact parseContact(JSONObject json) throws JSONException {
         Contact contact = new Contact();
@@ -264,80 +175,6 @@ public class ContactParser extends AbstractParser<Contact> {
         return contact;
     }
 
-    @Override
-    public JSONObject toJSONObject(Contact t) throws JSONException {
-        JSONObject json = new JSONObject();
-
-        json.put(KEY_USER_ID, t.getUid());
-        json.put(KEY_NAME, t.getName());
-        json.put(KEY_GENDER, t.getGender());
-        json.put(KEY_ANIMAL_SIGN, t.getAnimalSign());
-        json.put(KEY_ZODIAC, t.getZodiac());
-        json.put(KEY_RESIDENCE, t.getResidence());
-        json.put(KEY_NOTE, t.getNote());
-        json.put(KEY_ORGANIZATION, t.getOrganization());
-
-        Avatar avatar = t.getAvatar();
-        if (avatar != null) {
-            byte[] image = avatar.getMomoAvatarImage();
-            if (image != null && image.length > 0) {
-                String avatarB64 = Base64.encodeToString(image, Base64.DEFAULT);
-                json.put(KEY_AVATAR_B64, avatarB64);
-            }
-        }
-
-        // 微博列表
-        if (t.getWebsiteList() != null) {
-            JSONArray urlList = new JSONArray();
-            for (int i = 0; i < t.getWebsiteList().size(); i++) {
-                JSONObject url = new JSONObject();
-                url.put(KEY_ITEM_TYPE, t.getWebsiteLabelList().get(i));
-                url.put(KEY_ITEM_VALUE, t.getWebsiteList().get(i));
-
-                urlList.put(url);
-            }
-            json.put(KEY_WEIBO_URLS, urlList);
-        }
-        json.put(KEY_USER_LINK, t.getUserLink());
-        json.put(KEY_IN_MY_CONTACT, t.isInMyContacts() ? true : false);
-
-        // 邮箱列表
-        if (t.getEmailLabelList() != null) {
-            JSONArray emailList = new JSONArray();
-            for (int i = 0; i < t.getEmailLabelList().size(); i++) {
-                JSONObject email = new JSONObject();
-                email.put(KEY_ITEM_TYPE, t.getEmailLabelList().get(i));
-                email.put(KEY_ITEM_VALUE, t.getEmailList().get(i));
-
-                emailList.put(email);
-            }
-            json.put(KEY_EMAILS, emailList);
-        }
-
-        // 电话列表
-        if (t.getPhoneLabelList() != null) {
-            JSONArray telList = new JSONArray();
-            for (int i = 0; i < t.getPhoneLabelList().size(); i++) {
-                JSONObject tel = new JSONObject();
-                tel.put(KEY_ITEM_TYPE, t.getPhoneLabelList().get(i));
-                tel.put(KEY_ITEM_VALUE, t.getPhoneList().get(i));
-                tel.put(KEY_PHONE_ITEM_PREF, t.getPrefPhoneList().get(i));
-
-                telList.put(tel);
-            }
-            json.put(KEY_TELS, telList);
-        }
-
-        json.put(KEY_BIRTHDAY, t.getBirthday());
-        json.put(KEY_IS_HIDE_YEAR, t.isHideYear() ? true : false);
-        json.put(KEY_LUNAR_BDAY, t.getLunarBirthDay());
-        json.put(KEY_IS_LUNAR, t.isNeedLunarBirthDay() ? true : false);
-        json.put(KEY_USER_STATUS, t.getUserStatus());
-        json.put(KEY_COMPLETED, t.getCompleted());
-        json.put(KEY_SEND_CARD_COUNT, t.getSendCardCount());
-
-        return json;
-    }
 
     public JSONObject toContactJSONObject(Contact t) throws JSONException {
         JSONObject json = new JSONObject();
@@ -386,5 +223,4 @@ public class ContactParser extends AbstractParser<Contact> {
 
         return json;
     }
-
 }

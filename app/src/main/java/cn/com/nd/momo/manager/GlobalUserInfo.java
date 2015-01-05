@@ -2,14 +2,11 @@
 package cn.com.nd.momo.manager;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.telephony.TelephonyManager;
-import cn.com.nd.momo.api.MoMoHttpApi;
-import cn.com.nd.momo.api.types.OAuthInfo;
 import cn.com.nd.momo.api.util.ConfigHelper;
 import cn.com.nd.momo.api.util.Log;
-import cn.com.nd.momo.api.util.Utils;
+
 
 /**
  * 用户信息全局配置管理类

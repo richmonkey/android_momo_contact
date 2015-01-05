@@ -145,8 +145,6 @@ public class Contact implements Comparable<Contact>, MomoType {
 
     private boolean isToDelete = false;
 
-    private List<Weibo> weiboList = new ArrayList<Weibo>();
-
     /**
      * 用户信息填写的完善程度
      */
@@ -910,13 +908,7 @@ public class Contact implements Comparable<Contact>, MomoType {
         return crcImage;
     }
 
-    public List<Weibo> getWeiboList() {
-        return weiboList;
-    }
 
-    public void setWeiboList(List<Weibo> weiboList) {
-        this.weiboList = weiboList;
-    }
 
     public int getCompleted() {
         return completed;

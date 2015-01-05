@@ -10,7 +10,6 @@ import org.json.JSONObject;
 
 import cn.com.nd.momo.api.exception.MoMoException;
 import cn.com.nd.momo.api.http.HttpTool;
-import cn.com.nd.momo.api.oauth.OAuthHelper;
 import cn.com.nd.momo.api.parsers.json.ContactParser;
 import cn.com.nd.momo.api.types.Contact;
 import cn.com.nd.momo.api.util.Log;
@@ -23,15 +22,6 @@ import cn.com.nd.momo.api.util.Log;
 public final class SyncContactHttpApi {
 
     private static final String TAG = "SyncContactHttpApi";
-
-    /**
-     * 获取API地址
-     * 
-     * @return
-     */
-    public static final String getApi() {
-        return MoMoHttpApi.configType.getUrl();
-    }
 
     /**
      * 更新联系人信息到服务器
@@ -225,8 +215,7 @@ public final class SyncContactHttpApi {
      * @throws MoMoException
      */
     public static byte[] downloadContactAvatar(String avatarUrl) throws MoMoException {
-        String headers = OAuthHelper.getAuthHeader(avatarUrl, "GET");
-        return HttpTool.DownLoadBytes(avatarUrl, headers);
+        return HttpTool.DownLoadBytes(avatarUrl, "");
     }
 
 }
