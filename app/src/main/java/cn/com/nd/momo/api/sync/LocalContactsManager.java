@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.accounts.Account;
+import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
 import android.content.ContentUris;
 import android.content.Context;
@@ -205,6 +206,37 @@ public class LocalContactsManager {
         }
 
         return contactsList;
+    }
+
+    public boolean deleteAccountContact(Account account) {
+        if (account == null || account.type == null || account.name == null) {
+            return false;
+        }
+        if (account.type.equals("sim") && account.name.equals("sim卡")) {
+            return false;
+        }
+
+
+        if (Utils.ACCOUNT_MOBILE_NAME.equals(account.name)
+                && Utils.ACCOUNT_MOBILE_TYPE.equals(account.type)) {
+            Account vendorAccount = Utils.getVendorAccount();
+            if (null != vendorAccount) {
+                account = vendorAccount;
+            } else {
+                account = null;
+            }
+        }
+        if (isTransaction) {
+            ContactOperations.deleteAccountContact(mContext, account, mBatchOperation, true);
+        } else {
+            if (!beginTransaction()) {
+                Log.e(TAG, "nested is not allowed");
+                return false;
+            }
+            ContactOperations.deleteAccountContact(mContext, account, mBatchOperation, true);
+            execute();
+        }
+        return true;
     }
 
     public long addContact(Contact contact, Account account) {

@@ -162,6 +162,29 @@ public class ContactOperations {
                 false);
     }
 
+    public static void deleteAccountContact(Context context, Account account,
+                                            BatchOperation batchOperation, boolean isYield) {
+        String selection;
+        String[] selectionArgs;
+        if (account == null) {
+            selection = RawContacts.ACCOUNT_TYPE + " is null AND " + RawContacts.ACCOUNT_NAME + " is null";
+            selectionArgs = null;
+        } else {
+            selection = RawContacts.ACCOUNT_TYPE + " = ? AND " + RawContacts.ACCOUNT_NAME + " = ?";
+            selectionArgs = new String[]{
+                    account.type,
+                    account.name
+            };
+        }
+        Uri deleteUri = Uri.parse(RawContacts.CONTENT_URI.toString() + "?"
+                + ContactsContract.CALLER_IS_SYNCADAPTER + "=true");
+        ContentProviderOperation operation = ContentProviderOperation.newDelete(deleteUri)
+                .withSelection(selection, selectionArgs)
+                .withYieldAllowed(isYield)
+                .build();
+        batchOperation.add(operation);
+    }
+
     public static void deleteContact(Context context, long rawContactId,
             BatchOperation batchOperation, boolean isYield) {
         String selection = BaseColumns._ID + " = ?";
