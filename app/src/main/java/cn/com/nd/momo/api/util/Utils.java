@@ -72,7 +72,7 @@ public final class Utils {
 
     public static void saveGlobleContext(Context context) {
         mContext = context;
-        config = ConfigHelper.getInstance(mContext);
+        config = ConfigHelper.getInstance();
     }
 
     public static Context getContext() {

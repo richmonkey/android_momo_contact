@@ -5,8 +5,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import android.accounts.Account;
 import android.app.Activity;
@@ -139,6 +141,8 @@ public class AccountsBindActivity extends Activity implements OnClickListener {
     private class ImportTask extends AsyncTask<Void, Void, Boolean> {
         private ArrayList<MyAccount> selectedAccounts;
 
+        private ArrayList<Long> phoneIDs = new ArrayList<>();
+
         ImportTask(ArrayList<MyAccount> accounts) {
             this.selectedAccounts = accounts;
         }
@@ -147,14 +151,22 @@ public class AccountsBindActivity extends Activity implements OnClickListener {
             if (accounts == null || accounts.size() == 0) {
                 return;
             }
+
             List<Contact> mContactList = new ArrayList<Contact>();
             for (Account account : accounts) {
                 if (account.type.equals("sim")) {
                     mContactList.addAll(LocalContactsManager.getInstance().getSimContacts());
                 } else {
-                    mContactList.addAll(LocalContactsManager.getInstance().getAllContactsListByAccount(account));
+                    List<Contact> contacts = LocalContactsManager.getInstance().getAllContactsListByAccount(account);
+                    for (Contact c : contacts) {
+                        phoneIDs.add(c.getPhoneCid());
+                    }
+                    mContactList.addAll(contacts);
                 }
             }
+
+
+
             android.util.Log.d(TAG, "before crc, add contact size:" + mContactList.size());
             if (mContactList.size() < 1) {
                 android.util.Log.d(TAG, "import account contacts complete");
@@ -218,7 +230,13 @@ public class AccountsBindActivity extends Activity implements OnClickListener {
                 m_progressDlg.dismiss();
             }
 
+            long[] ids = new long[phoneIDs.size()];
+            for (int i = 0; i < phoneIDs.size(); i++) {
+                ids[i] = phoneIDs.get(i);
+            }
+
             Intent intent = new Intent();
+            intent.putExtra("phone_ids", ids);
             intent.putParcelableArrayListExtra("accounts", selectedAccounts);
             setResult(RESULT_OK, intent);
 
@@ -238,9 +256,9 @@ public class AccountsBindActivity extends Activity implements OnClickListener {
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_accounts_bind_ok:
-                ConfigHelper.getInstance(getApplicationContext()).saveKey(
+                ConfigHelper.getInstance().saveKey(
                         ConfigHelper.CONFIG_KEY_SYNC_MODE, ConfigHelper.SYNC_MODE_TWO_WAY);
-                ConfigHelper.getInstance(getApplicationContext()).commit();
+                ConfigHelper.getInstance().commit();
 
                 if (mImportTask != null) {
                     Log.i(TAG, "importing...");

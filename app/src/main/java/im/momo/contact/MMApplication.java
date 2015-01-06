@@ -8,6 +8,7 @@ import com.google.code.p.leveldb.LevelDB;
 import java.io.File;
 
 import cn.com.nd.momo.api.sync.ContactDatabaseHelper;
+import cn.com.nd.momo.api.util.ConfigHelper;
 import cn.com.nd.momo.api.util.Utils;
 import cn.com.nd.momo.manager.GlobalUserInfo;
 
@@ -29,5 +30,6 @@ public class MMApplication extends Application {
         ContactDatabaseHelper.initDatabase(this.getApplicationContext());
         Utils.saveGlobleContext(this.getApplicationContext());
         GlobalUserInfo.setAppContext(this);
+        ConfigHelper.initInstance(this);
     }
 }

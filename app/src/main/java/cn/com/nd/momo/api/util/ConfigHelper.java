@@ -84,6 +84,7 @@ public class ConfigHelper {
 
     public static final String CONFIG_KEY_SELECTED_ACCOUNTS = "selected_accounts";
 
+    public static final String CONFIG_KEY_IMPORT_PHONE_IDS = "import_phone_ids";
     // momosns
     static public final int PHOTO_UPLOAD_COMPRESS = 780;
 
@@ -141,13 +142,14 @@ public class ConfigHelper {
      */
     public static final String CONFIG_KEY_IMAGE_VIEW_MODE = "statuses_image_mode"; 
 
-    public static ConfigHelper getInstance(Context context) {
+    public static ConfigHelper getInstance() {
+        return mInstance;
+    }
+
+    public static void initInstance(Context context) {
         if (mInstance == null) {
-            // this global static method need application context
             mInstance = new ConfigHelper(context.getApplicationContext());
         }
-
-        return mInstance;
     }
 
     public boolean commit() {

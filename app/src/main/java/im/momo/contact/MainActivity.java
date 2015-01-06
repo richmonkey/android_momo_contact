@@ -28,6 +28,7 @@ import cn.com.nd.momo.api.sync.ContactSyncManager;
 import cn.com.nd.momo.api.sync.LocalContactsManager;
 import cn.com.nd.momo.api.sync.MoMoContactsManager;
 import cn.com.nd.momo.api.types.Contact;
+import cn.com.nd.momo.api.types.MyAccount;
 import cn.com.nd.momo.api.util.ConfigHelper;
 import cn.com.nd.momo.api.util.Utils;
 import cn.com.nd.momo.manager.GlobalUserInfo;
@@ -45,8 +46,6 @@ public class MainActivity extends ActionBarActivity {
     private static final String TAG = "contact";
 
     private static final int ACCOUNT_BIND_REQUEST = 100;
-
-    private ArrayList<Account> selectedAccounts;
 
 
     public class SyncTask extends AsyncTask<Void, Void, Boolean> {
@@ -91,23 +90,10 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ConfigHelper ch = ConfigHelper.getInstance(this.getApplicationContext());
+        ConfigHelper ch = ConfigHelper.getInstance();
         boolean import_setting = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_IMPORT_ACCOUNTS, false);
 
-        Set<String> set = ch.loadStringSetKey(ConfigHelper.CONFIG_KEY_SELECTED_ACCOUNTS, new HashSet<String>());
 
-        selectedAccounts = new ArrayList<>();
-        for (String s : set) {
-            String[] a = s.split("\\|\\|", 2);
-            if (a == null || a.length != 2) {
-                Log.w(TAG, "invalid account:" + s);
-                continue;
-            }
-            Log.i(TAG, "account type:" + a[0] + " name:" + a[1]);
-            String name = a[1];
-            String type = a[0];
-            selectedAccounts.add(new Account(name, type));
-        }
 
         //observe contact
         this.handler = new Handler() {
@@ -117,10 +103,13 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onChange(boolean selfChange) {
                 Log.i(TAG, "contact changed");
+                MainActivity.this.importContact();
                 if (mSyncTask == null) {
                     //todo 更新本地联系人个数
                 }
             }
+
+
         };
         ContentResolver resolver = this.getApplicationContext().getContentResolver();
         resolver.registerContentObserver(ContactsContract.Contacts.CONTENT_VCARD_URI, false, contentObserver);
@@ -144,6 +133,137 @@ public class MainActivity extends ActionBarActivity {
         if (!import_setting) {
             Intent intent = new Intent(MainActivity.this, AccountsBindActivity.class);
             startActivityForResult(intent, ACCOUNT_BIND_REQUEST);
+        } else {
+            importContact();
+        }
+
+        //LocalContactsManager.getInstance().deleteAccountContact(Utils.getCurrentAccount());
+        ContactDB cdb = ContactDB.getInstance();
+        cdb.setContentResolver(getApplicationContext().getContentResolver());
+        cdb.monitorConctat(getApplicationContext());
+        cdb.loadContacts();
+
+    }
+
+    private void saveSelectedAccounts(ArrayList<Account> accounts) {
+         if (accounts == null) {
+            Log.i(TAG, "accounts is null");
+            return;
+        }
+        ConfigHelper ch = ConfigHelper.getInstance();
+        Set<String> s = new HashSet<>();
+        //debug
+        for (Account account: accounts) {
+            Log.i(TAG, "name:" + account.name + " type:" + account.type);
+            s.add(account.type + "||" + account.name);
+        }
+        ch.saveStringSetKey(ConfigHelper.CONFIG_KEY_SELECTED_ACCOUNTS, s);
+    }
+    private void saveImportedPhoneIDs(long[] ids) {
+        if (ids == null) {
+            return;
+        }
+
+        Set<String> idSet = new HashSet<>();
+        for (int i = 0; i < ids.length; i++) {
+            idSet.add(String.valueOf(ids[i]));
+        }
+        ConfigHelper.getInstance().saveStringSetKey(ConfigHelper.CONFIG_KEY_IMPORT_PHONE_IDS, idSet);
+    }
+
+    private void saveImportedPhoneIDs(ArrayList<Long> ids) {
+        if (ids == null) {
+            return;
+        }
+
+        Set<String> idSet = new HashSet<>();
+        for (int i = 0; i < ids.size(); i++) {
+            idSet.add(String.valueOf(ids.get(i)));
+        }
+        ConfigHelper.getInstance().saveStringSetKey(ConfigHelper.CONFIG_KEY_IMPORT_PHONE_IDS, idSet);
+    }
+
+    private ArrayList<Account> loadSelectedAccounts() {
+        ConfigHelper ch = ConfigHelper.getInstance();
+        Set<String> set = ch.loadStringSetKey(ConfigHelper.CONFIG_KEY_SELECTED_ACCOUNTS, new HashSet<String>());
+        ArrayList<Account> selectedAccounts = new ArrayList<>();
+        for (String s : set) {
+            String[] a = s.split("\\|\\|", 2);
+            if (a == null || a.length != 2) {
+                Log.w(TAG, "invalid account:" + s);
+                continue;
+            }
+            Log.i(TAG, "account type:" + a[0] + " name:" + a[1]);
+            String name = a[1];
+            String type = a[0];
+            selectedAccounts.add(new Account(name, type));
+        }
+        return selectedAccounts;
+    }
+
+    private Set<Long> loadImportedPhoneIDs() {
+        ConfigHelper ch = ConfigHelper.getInstance();
+        Set<String> idSet = ConfigHelper.getInstance().loadStringSetKey(ConfigHelper.CONFIG_KEY_IMPORT_PHONE_IDS, new HashSet<String>());
+        HashSet<Long> importedPhoneIDs = new HashSet<>();
+        for (String s : idSet) {
+            importedPhoneIDs.add(Long.valueOf(s));
+        }
+        return importedPhoneIDs;
+    }
+
+    private void importContact() {
+        List<Account> accounts;
+        Set<Long> phoneIDs;
+        accounts = loadSelectedAccounts();
+        phoneIDs = loadImportedPhoneIDs();
+
+        if (accounts == null || accounts.size() == 0) {
+            return;
+        }
+        ArrayList<Long> newPhoneIDs = new ArrayList<Long>();
+        List<Contact> mContactList = new ArrayList<Contact>();
+        for (Account account : accounts) {
+            //sim卡中新增的联系人不自动增加到momo账号中
+            if (!account.type.equals("sim")) {
+                List<Contact> contacts = LocalContactsManager.getInstance().getAllContactsListByAccount(account);
+                for (Contact c : contacts) {
+                    newPhoneIDs.add(c.getPhoneCid());
+                }
+                mContactList.addAll(contacts);
+            }
+        }
+        saveImportedPhoneIDs(newPhoneIDs);
+        if (mContactList.size() < 1) {
+            return;
+        }
+
+        Iterator<Contact> ite = mContactList.iterator();
+        while (ite.hasNext()) {
+            Contact addContact = ite.next();
+            if (phoneIDs.contains(addContact.getPhoneCid())) {
+                ite.remove();
+            }
+        }
+        Log.d(TAG, "import added contact size:" + mContactList.size());
+
+        Account account = Utils.getCurrentAccount();
+        if (Utils.isBindedAccountExist(account) && mContactList.size() > 0) {
+            final int eachNum = 100;
+            int count = mContactList.size();
+            int times = count / eachNum + 1;
+
+            for (int i = 0; i < times; i++) {
+                List<Contact> list;
+                int begin = i * eachNum;
+                if (i == times - 1) {
+                    list = mContactList.subList(begin, count);
+                } else {
+                    int end = (i + 1) * eachNum;
+                    list = mContactList.subList(begin, end);
+                }
+                LocalContactsManager.getInstance().batchAddContacts(list, account);
+            }
+            Log.d(TAG, "import added contact count:" + mContactList.size());
         }
     }
 
@@ -152,29 +272,16 @@ public class MainActivity extends ActionBarActivity {
         Log.i(TAG, "result:" + resultCode + " request:" + requestCode);
 
         if (requestCode == ACCOUNT_BIND_REQUEST && resultCode == RESULT_OK) {
-            ConfigHelper ch = ConfigHelper.getInstance(this.getApplicationContext());
+            ConfigHelper ch = ConfigHelper.getInstance();
             ch.saveBooleanKey(ConfigHelper.CONFIG_KEY_IMPORT_ACCOUNTS, true);
 
             if (data == null) {
                 return;
             }
+            long[] ids = data.getLongArrayExtra("phone_ids");
             ArrayList<Account> accounts = data.getParcelableArrayListExtra("accounts");
-            if (accounts == null) {
-                Log.i(TAG, "accounts is null");
-                return;
-            }
-
-            Set<String> s = new HashSet<>();
-
-            //debug
-            for (Account account: accounts) {
-                Log.i(TAG, "name:" + account.name + " type:" + account.type);
-                s.add(account.type + "||" + account.name);
-            }
-
-            ch.saveStringSetKey(ConfigHelper.CONFIG_KEY_SELECTED_ACCOUNTS, s);
-
-            this.selectedAccounts = accounts;
+            saveSelectedAccounts(accounts);
+            saveImportedPhoneIDs(ids);
         }
     }
 
@@ -239,7 +346,7 @@ public class MainActivity extends ActionBarActivity {
                                 String type = b.getString(AccountManager.KEY_ACCOUNT_TYPE);
                                 Log.i(TAG, "add account success type:" + type + " name:" + name);
 
-                                ConfigHelper ch = ConfigHelper.getInstance(MainActivity.this.getApplicationContext());
+                                ConfigHelper ch = ConfigHelper.getInstance();
                                 ch.saveBooleanKey(ConfigHelper.CONFIG_KEY_MOMO_ACCOUNT_CREATED, true);
 
                                 boolean import_setting = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_IMPORT_ACCOUNTS, false);

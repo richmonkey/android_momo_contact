@@ -107,7 +107,7 @@ public class GlobalUserInfo {
     
     public static String getPhoneNumber() {
         if (mPhoneNumber == null || mPhoneNumber.length() < 1) {
-            mPhoneNumber = ConfigHelper.getInstance(mAppContext).loadKey(
+            mPhoneNumber = ConfigHelper.getInstance().loadKey(
                     ConfigHelper.CONFIG_KEY_PHONE_NUMBER);
         }
         return mPhoneNumber;
@@ -115,7 +115,7 @@ public class GlobalUserInfo {
 
     public static void setPhoneNumber(String mPhoneNumber) {
         GlobalUserInfo.mPhoneNumber = mPhoneNumber;
-        ConfigHelper cHelper = ConfigHelper.getInstance(mAppContext);
+        ConfigHelper cHelper = ConfigHelper.getInstance();
         cHelper.saveKey(ConfigHelper.CONFIG_KEY_PHONE_NUMBER, GlobalUserInfo.mPhoneNumber);
         cHelper.commit();
     }
@@ -131,21 +131,21 @@ public class GlobalUserInfo {
 
     public static String getName() {
         if ("".equals(mNAME)) {
-            mNAME = ConfigHelper.getInstance(mAppContext).loadKey(ConfigHelper.CONFIG_KEY_REALNAME);
+            mNAME = ConfigHelper.getInstance().loadKey(ConfigHelper.CONFIG_KEY_REALNAME);
         }
         return mNAME;
     }
 
     public static void setName(String mName) {
         GlobalUserInfo.mNAME = mName;
-        ConfigHelper cHelper = ConfigHelper.getInstance(mAppContext);
+        ConfigHelper cHelper = ConfigHelper.getInstance();
         cHelper.saveKey(ConfigHelper.CONFIG_KEY_REALNAME, GlobalUserInfo.mNAME);
         cHelper.commit();
     }
 
     public static String getAvatar() {
         if (mAvatarName == null || mAvatarName.length() == 0) {
-            mAvatarName = ConfigHelper.getInstance(mAppContext).loadKey(
+            mAvatarName = ConfigHelper.getInstance().loadKey(
                     ConfigHelper.CONFIG_KEY_AVATAR);
         }
         return mAvatarName;
@@ -153,7 +153,7 @@ public class GlobalUserInfo {
 
     public static void setAvatar(String avatar) {
         GlobalUserInfo.mAvatarName = avatar;
-        ConfigHelper cHelper = ConfigHelper.getInstance(mAppContext);
+        ConfigHelper cHelper = ConfigHelper.getInstance();
         cHelper.saveKey(ConfigHelper.CONFIG_KEY_AVATAR, GlobalUserInfo.mAvatarName);
         cHelper.commit();
     }
@@ -220,7 +220,7 @@ public class GlobalUserInfo {
     // check configuration to see if user has logined
     // do this when program started
     public synchronized static int checkLoginStatus(Context context) {
-        ConfigHelper cHelper = ConfigHelper.getInstance(context);
+        ConfigHelper cHelper = ConfigHelper.getInstance();
         String strStatus = cHelper.loadKey(ConfigHelper.CONFIG_KEY_LOGIN_STATUS);
         Log.d(TAG, "login status: " + strStatus);
 
@@ -242,9 +242,9 @@ public class GlobalUserInfo {
     }
 
     public synchronized static void setLoginStatus(int nStatus) {
-        ConfigHelper.getInstance(mAppContext).saveKey(ConfigHelper.CONFIG_KEY_LOGIN_STATUS,
+        ConfigHelper.getInstance().saveKey(ConfigHelper.CONFIG_KEY_LOGIN_STATUS,
                 String.valueOf(LOGIN_STATUS_LOGINED));
-        ConfigHelper.getInstance(mAppContext).commit();
+        ConfigHelper.getInstance().commit();
         mLoginStatus = nStatus;
     }
 
@@ -263,7 +263,7 @@ public class GlobalUserInfo {
     }
 
     public static String getSyncMode(Context c) {
-        ConfigHelper config = ConfigHelper.getInstance(c.getApplicationContext());
+        ConfigHelper config = ConfigHelper.getInstance();
         String syncMode = config.loadKey(ConfigHelper.CONFIG_KEY_SYNC_MODE);
         return syncMode;
     }
@@ -276,7 +276,7 @@ public class GlobalUserInfo {
      */
     public static String getCurrentZoneCode(Context context) {
         String zoneCode = GlobalUserInfo.DEFAULT_ZONE_CODE;
-        ConfigHelper configHelper = ConfigHelper.getInstance(context);
+        ConfigHelper configHelper = ConfigHelper.getInstance();
         zoneCode = configHelper.loadKey(ConfigHelper.CONFIG_KEY_ZONE_CODE);
         if (zoneCode.equals("")) {
             zoneCode = GlobalUserInfo.DEFAULT_ZONE_CODE;
