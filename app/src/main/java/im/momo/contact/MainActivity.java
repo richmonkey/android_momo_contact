@@ -136,13 +136,6 @@ public class MainActivity extends ActionBarActivity {
         } else {
             importContact();
         }
-
-        //LocalContactsManager.getInstance().deleteAccountContact(Utils.getCurrentAccount());
-        ContactDB cdb = ContactDB.getInstance();
-        cdb.setContentResolver(getApplicationContext().getContentResolver());
-        cdb.monitorConctat(getApplicationContext());
-        cdb.loadContacts();
-
     }
 
     private void saveSelectedAccounts(ArrayList<Account> accounts) {
