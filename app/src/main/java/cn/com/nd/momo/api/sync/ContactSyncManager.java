@@ -84,25 +84,29 @@ public class ContactSyncManager {
     /**
      * 同步联系人
      */
-    public void syncContacts() {
+    public boolean syncContacts() {
         Account account = Utils.getCurrentAccount();
         if (!Utils.isBindedAccountExist(account)) {
             Log.w(TAG, "momo account is't exist, please add momo account first!!!");
-            return;
+            return false;
         }
         needRestoreContactMap.clear();
-        updateLocalContactsToServer();
-        updateMoMoContactsFromServer();
+        boolean result = updateLocalContactsToServer();
+        if (!result) {
+            return false;
+        }
+        result = updateMoMoContactsFromServer();
         Log.d(TAG, "sync end");
+        return result;
     }
 
     /**
      * 先传改变的，再传新增的，最后传删除的。 上传改变的可能会冲突，冲突就转为新增 删除好友可能会失败，失败之后反写到手机联系人。
      * 上传完成后，才会写入MOMO数据库。
      */
-    private void updateLocalContactsToServer() {
+    private boolean updateLocalContactsToServer() {
         if (syncManager.needStopSync)
-            return;
+            return false;
         List<Contact> momoContactsList = momoContactsManager.getAllContactsIdList();
         Collections.sort(momoContactsList, PhoneCIdComparator.getInstance());
         int momoSize = momoContactsList.size();
@@ -114,7 +118,7 @@ public class ContactSyncManager {
         Collections.sort(localContactsList, PhoneCIdComparator.getInstance());
         Log.d(TAG, "local contact id:" + logPhoneCid(localContactsList));
         if (momoSize < 1 && localSize < 1)
-            return;
+            return true;
 
         List<Long> toDeleteToServerList = new ArrayList<Long>();
         List<Contact> toUpdateToServerList = new ArrayList<Contact>();
@@ -201,7 +205,7 @@ public class ContactSyncManager {
             toAddToServerList.clear();
         } catch (MoMoException e) {
             e.printStackTrace();
-            return;
+            return false;
         }
         if (momoIndex < momoSize) {
             for (int i = momoIndex; i < momoSize; i++) {
@@ -210,12 +214,17 @@ public class ContactSyncManager {
                 toDeleteToServerList.add(contactId);
             }
         }
-        batchDeleteContacts(toDeleteToServerList);
+        try {
+            batchDeleteContacts(toDeleteToServerList);
+        } catch (MoMoException e) {
+            return false;
+        }
         toDeleteToServerList.clear();
         toAddToServerList = null;
         toUpdateToServerList = null;
         toDeleteToServerList = null;
         System.gc();
+        return true;
     }
 
     /**
@@ -244,13 +253,19 @@ public class ContactSyncManager {
     /**
      * 由于是先上传再下载，下载只可能是新增或删除，不存在更新的可能。
      */
-    private void updateMoMoContactsFromServer() {
+    private boolean updateMoMoContactsFromServer() {
         if (syncManager.needStopSync)
-            return;
+            return false;
         Log.d(TAG, "update from server to momo db");
-        List<Contact> serverContactsList = getAllRemoteContactsSimpleInfoList();
+        List<Contact> serverContactsList;
+        try {
+            serverContactsList = getAllRemoteContactsSimpleInfoList();
+        } catch (MoMoException e) {
+            return false;
+        }
+
         if (null == serverContactsList)
-            return;
+            return false;
         List<Contact> momoContactsList = momoContactsManager.getAllContactsIdList();
         Log.d(TAG, "all contacts on server:" + serverContactsList.size());
         Log.d(TAG, "all contacts on momo:" + momoContactsList.size());
@@ -305,31 +320,36 @@ public class ContactSyncManager {
         if (momoIndex < momoSize) {
             needDeleteToMoMoList.addAll(momoContactsList.subList(momoIndex, momoSize));
         }
-        int needUpdateCount = needUpdateToMoMoList.size();
-        Log.d(TAG, "需要更新到MOMO的联系人个数：" + needUpdateCount);
-        batchUpdateToLocal(needUpdateToMoMoList);
+        try {
+            int needUpdateCount = needUpdateToMoMoList.size();
+            Log.d(TAG, "需要更新到MOMO的联系人个数：" + needUpdateCount);
+            batchUpdateToLocal(needUpdateToMoMoList);
 
-        int needAddCount = needAddToMoMoList.size();
-        Log.d(TAG, "需要添加到MOMO的联系人个数：" + needAddCount);
-        batchAddToLocal(needAddToMoMoList);
+            int needAddCount = needAddToMoMoList.size();
+            Log.d(TAG, "需要添加到MOMO的联系人个数：" + needAddCount);
+            batchAddToLocal(needAddToMoMoList);
 
-        int needDeleteCount = needDeleteToMoMoList.size();
-        Log.d(TAG, "需要删除MOMO的联系人个数：" + needDeleteCount);
-        batchDeleteToLocal(needDeleteToMoMoList);
-        int mergeCount = needMergeLocalList.size();
-        if (mergeCount > 0) {
-            Log.d(TAG, "deleteing the contacts to merge:" + mergeCount);
-            localContactsManager.batchDeleteContactsByIdList(needMergeLocalList);
-            needMergeLocalList.clear();
+            int needDeleteCount = needDeleteToMoMoList.size();
+            Log.d(TAG, "需要删除MOMO的联系人个数：" + needDeleteCount);
+            batchDeleteToLocal(needDeleteToMoMoList);
+            int mergeCount = needMergeLocalList.size();
+            if (mergeCount > 0) {
+                Log.d(TAG, "deleteing the contacts to merge:" + mergeCount);
+                localContactsManager.batchDeleteContactsByIdList(needMergeLocalList);
+                needMergeLocalList.clear();
+            }
+            batchRestoreContactProperties();
+            needUpdateToMoMoList.clear();
+            needAddToMoMoList.clear();
+            needDeleteToMoMoList.clear();
+            needUpdateToMoMoList = null;
+            needAddToMoMoList = null;
+            needDeleteToMoMoList = null;
+        } catch (MoMoException e){
+            return false;
         }
-        batchRestoreContactProperties();
-        needUpdateToMoMoList.clear();
-        needAddToMoMoList.clear();
-        needDeleteToMoMoList.clear();
-        needUpdateToMoMoList = null;
-        needAddToMoMoList = null;
-        needDeleteToMoMoList = null;
         System.gc();
+        return true;
     }
 
     /**
@@ -337,7 +357,7 @@ public class ContactSyncManager {
      * 
      * @param contactsList
      */
-    private void batchUpdateToLocal(List<Contact> contactsList) {
+    private void batchUpdateToLocal(List<Contact> contactsList) throws MoMoException{
         batchAddOrUpdateByStep(contactsList, false);
     }
 
@@ -347,7 +367,7 @@ public class ContactSyncManager {
      * @param contactsList
      * @param isAdd
      */
-    private void batchAddOrUpdateByStep(List<Contact> contactsList, boolean isAdd) {
+    private void batchAddOrUpdateByStep(List<Contact> contactsList, boolean isAdd) throws MoMoException {
         if (syncManager.needStopSync || null == contactsList)
             return;
         int serverContactsToAddCount = contactsList.size();
@@ -373,7 +393,7 @@ public class ContactSyncManager {
     /**
      * batcha dd to * @param contactsList
      */
-    private void batchAddToLocal(List<Contact> contactsList) {
+    private void batchAddToLocal(List<Contact> contactsList) throws MoMoException{
         if (syncManager.needStopSync)
             return;
         if (null != contactsList) {
@@ -389,7 +409,7 @@ public class ContactSyncManager {
     /**
      * 批量添加联系人到ｍｏｍｏ与手机
      */
-    private void batchAddContactDetails(List<Contact> list) {
+    private void batchAddContactDetails(List<Contact> list) throws MoMoException {
         if (syncManager.needStopSync || null == list || list.size() < 1)
             return;
         List<Contact> contactDetailsList = getRemoteContactsDetailsList(list, true);
@@ -443,7 +463,7 @@ public class ContactSyncManager {
     /**
      * 更新联系人的詳細信息
      */
-    private void batchUpdateContactDetails(List<Contact> needUpdateList) {
+    private void batchUpdateContactDetails(List<Contact> needUpdateList) throws MoMoException {
         if (syncManager.needStopSync || null == needUpdateList)
             return;
         List<Contact> contactListFromServer = getRemoteContactsDetailsList(needUpdateList, false);
@@ -570,7 +590,7 @@ public class ContactSyncManager {
      * @param isNew 标志待更新联系人（isNew = false）或新增联系人（isNew = true）2种情况，判断是否下载联系人头像
      * @return
      */
-    public List<Contact> getRemoteContactsDetailsList(List<Contact> list, boolean isNew) {
+    public List<Contact> getRemoteContactsDetailsList(List<Contact> list, boolean isNew) throws MoMoException {
         if (syncManager.needStopSync || null == list || list.size() < 1)
             return null;
         List<Contact> contactsList = new ArrayList<Contact>();
@@ -592,6 +612,7 @@ public class ContactSyncManager {
 
         } catch (MoMoException e) {
             e.printStackTrace();
+            throw e;
         }
         return contactsList;
     }
@@ -599,12 +620,13 @@ public class ContactSyncManager {
     /**
      * 从服务端获取联系人的简要信息
      */
-    private List<Contact> getAllRemoteContactsSimpleInfoList() {
+    private List<Contact> getAllRemoteContactsSimpleInfoList() throws MoMoException {
         List<Contact> contactsList = null;
         try {
             contactsList = SyncContactHttpApi.getAllContactSimpleInfoList();
         } catch (MoMoException e) {
             e.printStackTrace();
+            throw e;
         }
         return contactsList;
     }
@@ -767,7 +789,7 @@ public class ContactSyncManager {
     /**
      * 删除服务端的联系人
      */
-    private List<Boolean> deleteContactsToServer(List<Long> toDeleteIdList) {
+    private List<Boolean> deleteContactsToServer(List<Long> toDeleteIdList) throws MoMoException{
         if (null == toDeleteIdList)
             return null;
         List<Boolean> resultList = new ArrayList<Boolean>();
@@ -775,6 +797,7 @@ public class ContactSyncManager {
             resultList = SyncContactHttpApi.deleteContactList(toDeleteIdList);
         } catch (MoMoException e) {
             e.printStackTrace();
+            throw e;
         }
         return resultList;
     }
@@ -784,7 +807,7 @@ public class ContactSyncManager {
      * 
      * @param toDeleteList
      */
-    private void batchDeleteContacts(List<Long> toDeleteList) {
+    private void batchDeleteContacts(List<Long> toDeleteList) throws MoMoException {
         if (null == toDeleteList)
             return;
         int count = toDeleteList.size();
@@ -945,7 +968,13 @@ public class ContactSyncManager {
             return false;
         List<Long> toDeleteIdList = new ArrayList<Long>();
         toDeleteIdList.add(contactId);
-        List<Boolean> deleteServerResult = deleteContactsToServer(toDeleteIdList);
+        List<Boolean> deleteServerResult;
+        try {
+            deleteServerResult = deleteContactsToServer(toDeleteIdList);
+        } catch (MoMoException e) {
+            return false;
+        }
+
         if (null == deleteServerResult || deleteServerResult.size() < 1)
             return false;
         boolean result = deleteServerResult.get(0);

@@ -64,8 +64,8 @@ public class MainActivity extends ActionBarActivity {
                 cn.com.nd.momo.api.util.Log.w(TAG, "momo account is't exist, please add momo account first!!!");
                 return false;
             }
-            ContactSyncManager.getInstance().syncContacts();
-            return true;
+            boolean result = ContactSyncManager.getInstance().syncContacts();
+            return result;
         }
 
         @Override
