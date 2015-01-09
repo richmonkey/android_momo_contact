@@ -13,6 +13,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Date;
+
 import cn.com.nd.momo.manager.GlobalUserInfo;
 import im.momo.contact.R;
 import im.momo.contact.MainActivity;
@@ -57,6 +59,12 @@ public class VerifyActivity extends AccountActivity implements TextView.OnEditor
         verifyCode.setOnEditorActionListener(this);
     }
 
+    public static int getNow() {
+        Date date = new Date();
+        long t = date.getTime();
+        return (int)(t/1000);
+    }
+
     @OnClick(R.id.btn_login)
     void onLogin() {
         final String code = verifyCode.getText().toString();
@@ -81,7 +89,7 @@ public class VerifyActivity extends AccountActivity implements TextView.OnEditor
                         Token t = Token.getInstance();
                         t.accessToken = token.accessToken;
                         t.refreshToken = token.refreshToken;
-                        t.expireTimestamp = token.expireTimestamp;
+                        t.expireTimestamp = token.expireTimestamp + getNow();
                         t.uid = token.uid;
 
                         t.save();
