@@ -19,6 +19,7 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -39,6 +40,8 @@ import im.momo.contact.api.body.PostAuthRefreshToken;
 import im.momo.contact.model.ContactDB;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
+
+import static android.os.SystemClock.uptimeMillis;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -85,6 +88,9 @@ public class MainActivity extends ActionBarActivity {
 
     private Handler handler;
     private ContentObserver contentObserver;
+
+    private Timer refreshTokenTimer;
+    private int refreshErrorCount;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -114,7 +120,15 @@ public class MainActivity extends ActionBarActivity {
         ContentResolver resolver = this.getApplicationContext().getContentResolver();
         resolver.registerContentObserver(ContactsContract.Contacts.CONTENT_VCARD_URI, false, contentObserver);
 
-        refreshToken();
+        Token token = Token.getInstance();
+        int now = getNow();
+
+        if (now >= token.expireTimestamp + 60) {
+            refreshToken();
+        } else {
+            int t = token.expireTimestamp - 60 - now;
+            refreshTokenDelay(t);
+        }
 
         boolean created = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_MOMO_ACCOUNT_CREATED, false);
         Account account = Utils.getCurrentAccount();
@@ -365,23 +379,57 @@ public class MainActivity extends ActionBarActivity {
                 .subscribe(new Action1<Token>() {
                     @Override
                     public void call(Token token) {
+                        refreshErrorCount = 0;
                         onTokenRefreshed(token);
                     }
                 }, new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
                         Log.i(TAG, "refresh token error:" + throwable);
+                        refreshErrorCount++;
+                        refreshTokenDelay(60*refreshErrorCount);
                     }
                 });
     }
 
+    private void refreshTokenDelay(int t) {
+        if (refreshTokenTimer != null) {
+            refreshTokenTimer.suspend();
+        }
+
+        refreshTokenTimer = new Timer() {
+            @Override
+            protected void fire() {
+                refreshToken();
+            }
+        };
+        refreshTokenTimer.setTimer(uptimeMillis() + t*1000);
+        refreshTokenTimer.resume();
+    }
+
     protected void onTokenRefreshed(Token token) {
+        int now = getNow();
+
         Token t = Token.getInstance();
         t.accessToken = token.accessToken;
         t.refreshToken = token.refreshToken;
-        t.expireTimestamp = token.expireTimestamp;
+
+        t.expireTimestamp = token.expireTimestamp + now;
         t.save();
         Log.i(TAG, "token refreshed");
+
+        int ts = token.expireTimestamp - 60 - now;
+        if (ts <= 0) {
+            Log.w(TAG, "expire timestamp:" + (token.expireTimestamp - now));
+            return;
+        }
+        refreshTokenDelay(ts);
+    }
+
+    public static int getNow() {
+        Date date = new Date();
+        long t = date.getTime();
+        return (int)(t/1000);
     }
 
 }
