@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.database.ContentObserver;
+import android.graphics.Matrix;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.provider.ContactsContract;
@@ -16,6 +17,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.RotateAnimation;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -25,6 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import cn.com.nd.momo.api.SyncContactHttpApi;
+import cn.com.nd.momo.api.exception.MoMoException;
 import cn.com.nd.momo.api.sync.ContactSyncManager;
 import cn.com.nd.momo.api.sync.LocalContactsManager;
 import cn.com.nd.momo.api.sync.MoMoContactsManager;
@@ -52,6 +62,8 @@ public class MainActivity extends ActionBarActivity {
 
 
     public class SyncTask extends AsyncTask<Void, Void, Boolean> {
+        private long serviceCount;
+
         SyncTask() {
 
         }
@@ -65,14 +77,26 @@ public class MainActivity extends ActionBarActivity {
                 return false;
             }
             boolean result = ContactSyncManager.getInstance().syncContacts();
+            if (result) {
+                try {
+                    serviceCount = SyncContactHttpApi.getContactCount();
+                } catch (MoMoException e) {
+                    return false;
+                }
+            }
             return result;
         }
 
         @Override
         protected void onPostExecute(final Boolean success) {
+            ImageButton imageButton = (ImageButton)MainActivity.this.findViewById(R.id.synImageBtn);
+            imageButton.clearAnimation();
             mSyncTask = null;
             if (success) {
                 Log.i(TAG, "sync success");
+                serviceTextView.setText(String.valueOf(serviceCount));
+                long c = LocalContactsManager.getInstance().getContactCountByAccount(Utils.getCurrentAccount());
+                localTextView.setText(String.valueOf(c));
             } else {
                 Log.i(TAG, "sync fail");
             }
@@ -81,6 +105,8 @@ public class MainActivity extends ActionBarActivity {
         @Override
         protected void onCancelled() {
             mSyncTask = null;
+            ImageButton imageButton = (ImageButton)MainActivity.this.findViewById(R.id.synImageBtn);
+            imageButton.clearAnimation();
         }
     }
 
@@ -89,6 +115,9 @@ public class MainActivity extends ActionBarActivity {
     private Handler handler;
     private ContentObserver contentObserver;
 
+    private TextView localTextView;
+    private TextView serviceTextView;
+
     private Timer refreshTokenTimer;
     private int refreshErrorCount;
     @Override
@@ -96,10 +125,11 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        localTextView = (TextView)findViewById(R.id.local);
+        serviceTextView = (TextView)findViewById(R.id.service);
+
         ConfigHelper ch = ConfigHelper.getInstance();
         boolean import_setting = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_IMPORT_ACCOUNTS, false);
-
-
 
         //observe contact
         this.handler = new Handler() {
@@ -109,14 +139,17 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onChange(boolean selfChange) {
                 Log.i(TAG, "contact changed");
-                MainActivity.this.importContact();
                 if (mSyncTask == null) {
-                    //todo 更新本地联系人个数
+                    MainActivity.this.importContact();
+                    long count = LocalContactsManager.getInstance().getContactCountByAccount(Utils.getCurrentAccount());
+                    localTextView.setText(String.valueOf(count));
                 }
             }
-
-
         };
+
+        long count = LocalContactsManager.getInstance().getContactCountByAccount(Utils.getCurrentAccount());
+        localTextView.setText(String.valueOf(count));
+
         ContentResolver resolver = this.getApplicationContext().getContentResolver();
         resolver.registerContentObserver(ContactsContract.Contacts.CONTENT_VCARD_URI, false, contentObserver);
 
@@ -125,9 +158,18 @@ public class MainActivity extends ActionBarActivity {
 
         if (now >= token.expireTimestamp + 60) {
             refreshToken();
+
+            Handler h = new Handler();
+            h.postAtTime(new Runnable() {
+                @Override
+                public void run() {
+                    refreshServiceCount();
+                }
+            }, uptimeMillis()+30*1000);
         } else {
             int t = token.expireTimestamp - 60 - now;
             refreshTokenDelay(t);
+            refreshServiceCount();
         }
 
         boolean created = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_MOMO_ACCOUNT_CREATED, false);
@@ -150,6 +192,31 @@ public class MainActivity extends ActionBarActivity {
         } else {
             importContact();
         }
+    }
+
+    private void refreshServiceCount() {
+
+        AsyncTask<Void, Void, Boolean> task = new AsyncTask<Void, Void, Boolean>() {
+            private long serviceCount;
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                try {
+                    serviceCount = SyncContactHttpApi.getContactCount();
+                    Log.i(TAG, "get server contact count:" + serviceCount);
+                } catch (MoMoException e) {
+                    Log.i(TAG, "get server contact count fail");
+                    return false;
+                }
+                return true;
+            }
+            @Override
+            protected void onPostExecute(final Boolean success) {
+                if (success) {
+                    serviceTextView.setText(String.valueOf(serviceCount));
+                }
+            }
+        };
+        task.execute();
     }
 
     private void saveSelectedAccounts(ArrayList<Account> accounts) {
@@ -307,11 +374,20 @@ public class MainActivity extends ActionBarActivity {
         }
         if (mSyncTask == null) {
             mSyncTask = new SyncTask();
+
+            ImageButton imageButton = (ImageButton)this.findViewById(R.id.synImageBtn);
+            Animation ranim =  AnimationUtils.loadAnimation(this, R.anim.rotate);
+            imageButton.startAnimation(ranim);
             mSyncTask.execute();
         } else {
             Log.i(TAG, "sync....");
         }
     }
+
+    public void onSync(View view) {
+        beginSync();
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -320,10 +396,7 @@ public class MainActivity extends ActionBarActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_sync) {
-            beginSync();
-            return true;
-        } else if (id == R.id.action_setting) {
+        if (id == R.id.import_account) {
             Intent intent = new Intent(MainActivity.this, AccountsBindActivity.class);
             startActivityForResult(intent, ACCOUNT_BIND_REQUEST);
             return true;

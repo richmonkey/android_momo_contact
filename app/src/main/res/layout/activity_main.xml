@@ -18,7 +18,8 @@
         android:layout_width="110dp"
         android:layout_height="110dp"
         android:scaleType="fitXY"
-        android:background="@drawable/syn" />
+        android:background="@drawable/syn"
+        android:onClick="onSync" />
 
     <LinearLayout
         android:layout_below="@+id/imgaeview"
@@ -41,9 +42,10 @@
                 android:scaleType="center"
                 android:src="@drawable/local" />
             <TextView
+                android:id="@+id/local"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="dsfdsfds"/>
+                android:text="0"/>
             </LinearLayout>
 
         <LinearLayout
@@ -59,9 +61,10 @@
                 android:layout_height="wrap_content"
                 android:src="@drawable/service" />
             <TextView
+                android:id="@+id/service"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="dsfdsfds"/>
+                android:text="0"/>
         </LinearLayout>
 
     </LinearLayout>
