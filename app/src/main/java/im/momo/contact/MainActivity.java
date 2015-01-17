@@ -155,7 +155,6 @@ public class MainActivity extends ActionBarActivity {
 
         Token token = Token.getInstance();
         int now = getNow();
-
         if (now >= token.expireTimestamp + 60) {
             refreshToken();
 
@@ -491,9 +490,9 @@ public class MainActivity extends ActionBarActivity {
         t.save();
         Log.i(TAG, "token refreshed");
 
-        int ts = token.expireTimestamp - 60 - now;
+        int ts = token.expireTimestamp - 60;
         if (ts <= 0) {
-            Log.w(TAG, "expire timestamp:" + (token.expireTimestamp - now));
+            Log.w(TAG, "expire timestamp:" + token.expireTimestamp);
             return;
         }
         refreshTokenDelay(ts);
