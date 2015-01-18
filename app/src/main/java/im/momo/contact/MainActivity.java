@@ -8,7 +8,6 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.database.ContentObserver;
-import android.graphics.Matrix;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.provider.ContactsContract;
@@ -20,9 +19,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.view.animation.RotateAnimation;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -99,6 +96,7 @@ public class MainActivity extends ActionBarActivity {
                 localTextView.setText(String.valueOf(c));
             } else {
                 Log.i(TAG, "sync fail");
+                Toast.makeText(MainActivity.this, "同步失败",  Toast.LENGTH_SHORT).show();
             }
         }
 
