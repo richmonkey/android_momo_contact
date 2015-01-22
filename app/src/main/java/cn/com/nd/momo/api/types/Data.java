@@ -196,21 +196,21 @@ public class Data implements Cloneable {
     // im 协议标签
     public final static String LABEL_IM_PROTOCOL_91U = "91u";
 
-    public final static String LABEL_IM_PROTOCOL_AIM = "AIM";
+    public final static String LABEL_IM_PROTOCOL_AIM = "aim";
 
-    public final static String LABEL_IM_PROTOCOL_MSN = "MSN";
+    public final static String LABEL_IM_PROTOCOL_MSN = "msn";
 
-    public final static String LABEL_IM_PROTOCOL_YAHOO = "YAHOO";
+    public final static String LABEL_IM_PROTOCOL_YAHOO = "yahoo";
 
-    public final static String LABEL_IM_PROTOCOL_SKYPE = "SKYPE";
+    public final static String LABEL_IM_PROTOCOL_SKYPE = "skype";
 
-    public final static String LABEL_IM_PROTOCOL_QQ = "QQ";
+    public final static String LABEL_IM_PROTOCOL_QQ = "qq";
 
-    public final static String LABEL_IM_PROTOCOL_GTALK = "GTALK";
+    public final static String LABEL_IM_PROTOCOL_GTALK = "gtalk";
 
-    public final static String LABEL_IM_PROTOCOL_ICQ = "ICQ";
+    public final static String LABEL_IM_PROTOCOL_ICQ = "icq";
 
-    public final static String LABEL_IM_PROTOCOL_JABBER = "JABBER";
+    public final static String LABEL_IM_PROTOCOL_JABBER = "jabber";
 
     // website类型
     public final static int TYPE_WEBSITE_HOMEPAGE = 1;
