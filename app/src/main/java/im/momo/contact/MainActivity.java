@@ -44,7 +44,6 @@ import im.momo.contact.activity.AccountsBindActivity;
 import im.momo.contact.api.IMHttp;
 import im.momo.contact.api.IMHttpFactory;
 import im.momo.contact.api.body.PostAuthRefreshToken;
-import im.momo.contact.model.ContactDB;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 
