@@ -23,6 +23,8 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.code.p.leveldb.LevelDB;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -168,6 +170,14 @@ public class MainActivity extends ActionBarActivity {
             refreshServiceCount();
         }
 
+        try {
+            String serviceCount = LevelDB.getDefaultDB().get("server_contact_count");
+            if (serviceCount != null) {
+                serviceTextView.setText(String.valueOf(serviceCount));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         boolean created = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_MOMO_ACCOUNT_CREATED, false);
         Account account = Utils.getCurrentAccount();
         if (!Utils.isBindedAccountExist(account)) {
@@ -208,6 +218,11 @@ public class MainActivity extends ActionBarActivity {
             @Override
             protected void onPostExecute(final Boolean success) {
                 if (success) {
+                    try {
+                        LevelDB.getDefaultDB().set("server_contact_count", String.valueOf(serviceCount));
+                    } catch (Exception e){
+
+                    }
                     serviceTextView.setText(String.valueOf(serviceCount));
                 }
             }
@@ -341,7 +356,10 @@ public class MainActivity extends ActionBarActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.i(TAG, "result:" + resultCode + " request:" + requestCode);
 
-        if (requestCode == ACCOUNT_BIND_REQUEST && resultCode == RESULT_OK) {
+        if (requestCode == ACCOUNT_BIND_REQUEST && resultCode == RESULT_CANCELED) {
+            ConfigHelper ch = ConfigHelper.getInstance();
+            ch.saveBooleanKey(ConfigHelper.CONFIG_KEY_IMPORT_ACCOUNTS, true);
+        } else if (requestCode == ACCOUNT_BIND_REQUEST && resultCode == RESULT_OK) {
             ConfigHelper ch = ConfigHelper.getInstance();
             ch.saveBooleanKey(ConfigHelper.CONFIG_KEY_IMPORT_ACCOUNTS, true);
 
