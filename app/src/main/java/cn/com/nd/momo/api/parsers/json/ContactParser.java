@@ -200,7 +200,7 @@ public class ContactParser {
         Avatar avatar = t.getAvatar();
         if (avatar != null) {
             byte[] image = avatar.getMomoAvatarImage();
-            if (image != null && image.length > 0) {
+            if (image != null && image.length > 0 && image.length < 128*1024) {
                 String avatarB64 = Base64.encodeToString(image, Base64.DEFAULT);
                 Log.i("contact", "avatar b64 size:" + avatarB64.length());
                 json.put(KEY_AVATAR_B64, avatarB64);
