@@ -893,6 +893,10 @@ public class Contact implements Comparable<Contact>, MomoType {
     }
 
     public byte[] generateAvatarCRC() {
+        //cancel avatar crc
+        //联系人头像写入本地后，再次读出来的内容会发生改变
+        return new byte[0];
+        /*
         byte[] avatarImage = null;
         if (avatar != null && avatar.getMomoAvatarImage() != null
                 && avatar.getMomoAvatarImage().length > 128) {
@@ -905,7 +909,7 @@ public class Contact implements Comparable<Contact>, MomoType {
         for (int i = 0; i < 128; i++) {
             crcImage[i] = avatarImage[i];
         }
-        return crcImage;
+        return crcImage;*/
     }
 
 
