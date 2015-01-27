@@ -773,12 +773,19 @@ public class ContactSyncManager {
                     contact.setContactCRC(String.valueOf(contact.generateCRC()));
                 }
             }
-            if (null != contactsList && contactsList.size() > 0) {
-                Log.d(TAG, "add to momo: " + contactsList.size());
-                boolean result = momoContactsManager.batchAddContacts(contactsList, true);
+            List<Contact> contacts = new ArrayList<Contact>();
+            for (Contact c : contactsList) {
+                if (!c.isToDelete()) {
+                    contacts.add(c);
+                }
+            }
+
+            if (contacts.size() > 0) {
+                Log.d(TAG, "add to momo: " + contacts.size());
+                boolean result = momoContactsManager.batchAddContacts(contacts, true);
                 Log.d(TAG, "add to momo result: " + result);
                 if (result) {
-                    momoContactsManager.batchInsertAvatar(contactsList);
+                    momoContactsManager.batchInsertAvatar(contacts);
                 }
             }
         } catch (JSONException e) {
