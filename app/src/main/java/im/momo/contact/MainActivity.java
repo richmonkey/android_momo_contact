@@ -151,9 +151,6 @@ public class MainActivity extends ActionBarActivity {
             }
         };
 
-        long count = LocalContactsManager.getInstance().getContactCountByAccount(Utils.getCurrentAccount());
-        localTextView.setText(String.valueOf(count));
-
         ContentResolver resolver = this.getApplicationContext().getContentResolver();
         resolver.registerContentObserver(ContactsContract.Contacts.CONTENT_VCARD_URI, false, contentObserver);
 
@@ -175,14 +172,6 @@ public class MainActivity extends ActionBarActivity {
             refreshServiceCount();
         }
 
-        try {
-            String serviceCount = LevelDB.getDefaultDB().get("server_contact_count");
-            if (serviceCount != null) {
-                serviceTextView.setText(String.valueOf(serviceCount));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
         boolean isFlyMe = Rom.isFlyme();
         //flyme is stupid
@@ -194,8 +183,25 @@ public class MainActivity extends ActionBarActivity {
             Utils.setCurrentAccount(Utils.getMoMoAccount());
         }
 
+
+        long count = LocalContactsManager.getInstance().getContactCountByAccount(Utils.getCurrentAccount());
+        localTextView.setText(String.valueOf(count));
+
+        try {
+            String serviceCount = LevelDB.getDefaultDB().get("server_contact_count");
+            if (serviceCount != null) {
+                serviceTextView.setText(String.valueOf(serviceCount));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
         Account account = Utils.getCurrentAccount();
-        if (account != null && !Utils.isBindedAccountExist(account)) {
+        if (account == null) {
+            return;
+        }
+        if (!Utils.isBindedAccountExist(account)) {
             boolean created = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_MOMO_ACCOUNT_CREATED, false);
             if (created) {
                 Toast.makeText(getApplicationContext(), "momo account disappear, what's your rom?",
@@ -205,10 +211,7 @@ public class MainActivity extends ActionBarActivity {
             MoMoContactsManager.getInstance().deleteAllContacts();
             Log.i(TAG, "add account type:" + account.type + " name:" + account.name);
             addAccount(this, account);
-            return;
-        }
-
-        if (account != null) {
+        } else {
             boolean import_setting = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_IMPORT_ACCOUNTS, false);
             if (!import_setting) {
                 Intent intent = new Intent(MainActivity.this, AccountsBindActivity.class);
