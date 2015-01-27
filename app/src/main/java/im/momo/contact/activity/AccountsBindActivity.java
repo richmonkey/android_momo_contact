@@ -33,7 +33,9 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import cn.com.nd.momo.api.exception.MoMoException;
 import cn.com.nd.momo.api.sync.ContactSyncManager;
 import cn.com.nd.momo.api.sync.LocalContactsManager;
 import cn.com.nd.momo.api.types.Contact;
@@ -147,7 +149,7 @@ public class AccountsBindActivity extends Activity implements OnClickListener {
             this.selectedAccounts = accounts;
         }
 
-        private void importContact(List<MyAccount> accounts) {
+        private void importContact(List<MyAccount> accounts) throws MoMoException {
             if (accounts == null || accounts.size() == 0) {
                 return;
             }
@@ -190,7 +192,7 @@ public class AccountsBindActivity extends Activity implements OnClickListener {
             }
             android.util.Log.d(TAG, "after crc, add contact size:" + mContactList.size());
 
-            if (Utils.isBindedAccountExist(account) && mContactList.size() > 0) {
+            if (account != null && Utils.isBindedAccountExist(account) && mContactList.size() > 0) {
                 final int eachNum = 100;
                 int count = mContactList.size();
                 int times = count / eachNum + 1;
@@ -217,7 +219,11 @@ public class AccountsBindActivity extends Activity implements OnClickListener {
         @Override
         protected Boolean doInBackground(Void... params) {
             android.util.Log.i(TAG, "contact sync...");
-            importContact(selectedAccounts);
+            try {
+                importContact(selectedAccounts);
+            } catch (MoMoException e) {
+                return false;
+            }
             return true;
         }
 
@@ -230,6 +236,12 @@ public class AccountsBindActivity extends Activity implements OnClickListener {
                 m_progressDlg.dismiss();
             }
 
+            if (!success) {
+                Toast.makeText(AccountsBindActivity.this, "联系人写入失败", Toast.LENGTH_SHORT).show();
+                setResult(RESULT_CANCELED);
+                finish();
+                return;
+            }
             long[] ids = new long[phoneIDs.size()];
             for (int i = 0; i < phoneIDs.size(); i++) {
                 ids[i] = phoneIDs.get(i);

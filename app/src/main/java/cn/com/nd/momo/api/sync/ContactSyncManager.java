@@ -86,7 +86,7 @@ public class ContactSyncManager {
      */
     public boolean syncContacts() {
         Account account = Utils.getCurrentAccount();
-        if (!Utils.isBindedAccountExist(account)) {
+        if (account != null && !Utils.isBindedAccountExist(account)) {
             Log.w(TAG, "momo account is't exist, please add momo account first!!!");
             return false;
         }

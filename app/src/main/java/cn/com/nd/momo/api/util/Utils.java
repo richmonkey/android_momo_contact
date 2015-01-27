@@ -289,34 +289,12 @@ public final class Utils {
         return momoAccount;
     }
 
+
+    public static void setCurrentAccount(Account account) {
+        currentAccount = account;
+    }
     public static Account getCurrentAccount() {
-        return getMoMoAccount();
-        /*
-        if (null == currentAccount) {
-            String accountName = config.loadKey(ConfigHelper.CONFIG_KEY_BINDED_ACCOUNT_NAME);
-            String accountType = config.loadKey(ConfigHelper.CONFIG_KEY_BINDED_ACCOUNT_TYPE);
-            if (!TextUtils.isEmpty(accountName) && !TextUtils.isEmpty(accountType)) {
-                currentAccount = new MyAccount(accountName, accountType);
-            }
-        }
-        String momoAccountName = GlobalUserInfo.getPhoneNumber();
-        String momoAccountType = GlobalUserInfo.MOMO_ACCOUNT_TYPE;
-        MyAccount momoAccount = null;
-        if(!TextUtils.isEmpty(momoAccountName)) {
-            try {
-                momoAccount = new MyAccount(momoAccountName, momoAccountType);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        if (currentAccount != null
-                && !MyAccount.MOBILE_ACCOUNT.isEqual(currentAccount)
-                && (momoAccount == null || !momoAccount.isEqual(currentAccount))) {
-            currentAccount = null;
-            config.removeKey(ConfigHelper.CONFIG_KEY_BINDED_ACCOUNT_NAME);
-            config.removeKey(ConfigHelper.CONFIG_KEY_BINDED_ACCOUNT_TYPE);
-        }
-        return currentAccount;*/
+        return currentAccount;
     }
 
     /**

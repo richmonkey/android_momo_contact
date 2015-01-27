@@ -38,7 +38,6 @@ import cn.com.nd.momo.api.sync.ContactSyncManager;
 import cn.com.nd.momo.api.sync.LocalContactsManager;
 import cn.com.nd.momo.api.sync.MoMoContactsManager;
 import cn.com.nd.momo.api.types.Contact;
-import cn.com.nd.momo.api.types.MyAccount;
 import cn.com.nd.momo.api.util.ConfigHelper;
 import cn.com.nd.momo.api.util.Utils;
 import cn.com.nd.momo.manager.GlobalUserInfo;
@@ -70,7 +69,7 @@ public class MainActivity extends ActionBarActivity {
         protected Boolean doInBackground(Void... params) {
             Log.i(TAG, "contact sync...");
             Account account = Utils.getCurrentAccount();
-            if (!Utils.isBindedAccountExist(account)) {
+            if (account != null && !Utils.isBindedAccountExist(account)) {
                 cn.com.nd.momo.api.util.Log.w(TAG, "momo account is't exist, please add momo account first!!!");
                 return false;
             }
@@ -128,7 +127,7 @@ public class MainActivity extends ActionBarActivity {
         serviceTextView = (TextView)findViewById(R.id.service);
 
         ConfigHelper ch = ConfigHelper.getInstance();
-        boolean import_setting = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_IMPORT_ACCOUNTS, false);
+
 
         //observe contact
         this.handler = new Handler() {
@@ -139,7 +138,13 @@ public class MainActivity extends ActionBarActivity {
             public void onChange(boolean selfChange) {
                 Log.i(TAG, "contact changed");
                 if (mSyncTask == null) {
-                    MainActivity.this.importContact();
+                    try {
+                        MainActivity.this.importContact();
+                    } catch (MoMoException e) {
+                        Log.i(TAG, "can't insert contact to local");
+                        Toast.makeText(MainActivity.this, "联系人写入失败",  Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     long count = LocalContactsManager.getInstance().getContactCountByAccount(Utils.getCurrentAccount());
                     localTextView.setText(String.valueOf(count));
                 }
@@ -178,9 +183,20 @@ public class MainActivity extends ActionBarActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        boolean created = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_MOMO_ACCOUNT_CREATED, false);
+
+        boolean isFlyMe = Rom.isFlyme();
+        //flyme is stupid
+        if (isFlyMe) {
+            Log.i(TAG, "flyme...............");
+            Utils.setCurrentAccount(null);
+        } else {
+            Log.i(TAG, "use momo account");
+            Utils.setCurrentAccount(Utils.getMoMoAccount());
+        }
+
         Account account = Utils.getCurrentAccount();
-        if (!Utils.isBindedAccountExist(account)) {
+        if (account != null && !Utils.isBindedAccountExist(account)) {
+            boolean created = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_MOMO_ACCOUNT_CREATED, false);
             if (created) {
                 Toast.makeText(getApplicationContext(), "momo account disappear, what's your rom?",
                         Toast.LENGTH_SHORT).show();
@@ -192,11 +208,19 @@ public class MainActivity extends ActionBarActivity {
             return;
         }
 
-        if (!import_setting) {
-            Intent intent = new Intent(MainActivity.this, AccountsBindActivity.class);
-            startActivityForResult(intent, ACCOUNT_BIND_REQUEST);
-        } else {
-            importContact();
+        if (account != null) {
+            boolean import_setting = ch.loadBooleanKey(ConfigHelper.CONFIG_KEY_IMPORT_ACCOUNTS, false);
+            if (!import_setting) {
+                Intent intent = new Intent(MainActivity.this, AccountsBindActivity.class);
+                startActivityForResult(intent, ACCOUNT_BIND_REQUEST);
+            } else {
+                try {
+                    importContact();
+                } catch (MoMoException e) {
+                    Log.i(TAG, "can't insert contact to local");
+                    Toast.makeText(MainActivity.this, "联系人写入失败",  Toast.LENGTH_SHORT).show();
+                }
+            }
         }
     }
 
@@ -296,7 +320,7 @@ public class MainActivity extends ActionBarActivity {
         return importedPhoneIDs;
     }
 
-    private void importContact() {
+    private void importContact() throws MoMoException {
         List<Account> accounts;
         Set<Long> phoneIDs;
         accounts = loadSelectedAccounts();
@@ -332,7 +356,7 @@ public class MainActivity extends ActionBarActivity {
         Log.d(TAG, "import added contact size:" + mContactList.size());
 
         Account account = Utils.getCurrentAccount();
-        if (Utils.isBindedAccountExist(account) && mContactList.size() > 0) {
+        if (account != null && Utils.isBindedAccountExist(account) && mContactList.size() > 0) {
             final int eachNum = 100;
             int count = mContactList.size();
             int times = count / eachNum + 1;
@@ -382,7 +406,7 @@ public class MainActivity extends ActionBarActivity {
 
     private void beginSync() {
         Account account = Utils.getCurrentAccount();
-        if (!Utils.isBindedAccountExist(account)) {
+        if (account != null && !Utils.isBindedAccountExist(account)) {
             Log.i(TAG, "momo account is't exist, can't begin sync contact");
             return;
         }

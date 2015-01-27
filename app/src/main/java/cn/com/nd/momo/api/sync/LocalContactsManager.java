@@ -37,6 +37,8 @@ import android.provider.ContactsContract.CommonDataKinds.StructuredPostal;
 import android.provider.ContactsContract.CommonDataKinds.Website;
 import android.provider.ContactsContract.RawContacts;
 import android.provider.ContactsContract.RawContactsEntity;
+
+import cn.com.nd.momo.api.exception.MoMoException;
 import cn.com.nd.momo.api.types.Address;
 import cn.com.nd.momo.api.types.Avatar;
 import cn.com.nd.momo.api.types.Contact;
@@ -83,9 +85,7 @@ public class LocalContactsManager {
     public int getContactCountByAccount(Account account) {
         Cursor cursor = null;
         int count = 0;
-        if (account == null) {
-            return count;
-        }
+
         String filter = Utils.getAccountQueryFilterStr(account);
         String[] projection = {
                 BaseColumns._COUNT
@@ -113,9 +113,13 @@ public class LocalContactsManager {
 
     private List<Contact> getAllContactsListByAccount(boolean withAccout) {
         List<Contact> contactsList = new ArrayList<Contact>();
-        if (withAccout && !Utils.isBindedAccountExist(Utils.getCurrentAccount())) {
-            return contactsList;
+        if (withAccout) {
+            Account account = Utils.getCurrentAccount();
+            if (account != null && !Utils.isBindedAccountExist(account)) {
+                return contactsList;
+            }
         }
+
         Cursor cursor = null;
         try {
             String queryFilterStr = "";
@@ -260,7 +264,7 @@ public class LocalContactsManager {
         }
     }
 
-    public List<Contact> batchAddContacts(List<Contact> contacts) {
+    public List<Contact> batchAddContacts(List<Contact> contacts) throws MoMoException {
         if (contacts == null) {
             Log.e(TAG, "contact is null");
             return null;
@@ -273,7 +277,7 @@ public class LocalContactsManager {
         return batchAddContacts(contacts, account);
     }
     
-    public List<Contact> batchAddContacts(List<Contact> contacts, Account account) {
+    public List<Contact> batchAddContacts(List<Contact> contacts, Account account) throws MoMoException {
         if (contacts == null) {
             Log.e(TAG, "contact is null");
             return null;
@@ -305,6 +309,9 @@ public class LocalContactsManager {
             if (null != uri) {
                 if (rawContactIdFlag == matcher.match(uri)) {
                     int phoneCid = (int)ContentUris.parseId(uri);
+                    if (phoneCid == 0) {
+                        throw new MoMoException("phone cid is 0");
+                    }
                     contacts.get(index).setPhoneCid(phoneCid);
                     index++;
                 }
