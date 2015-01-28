@@ -438,6 +438,10 @@ public class MainActivity extends ActionBarActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.import_account) {
+            Account account = Utils.getCurrentAccount();
+            if (account == null) {
+                return true;
+            }
             Intent intent = new Intent(MainActivity.this, AccountsBindActivity.class);
             startActivityForResult(intent, ACCOUNT_BIND_REQUEST);
             return true;
