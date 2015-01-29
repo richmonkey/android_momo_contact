@@ -791,7 +791,8 @@ public class MoMoContactsManager {
                     continue;
                 contact.setSavedToLocal(isSavedToLocal);
                 ContentValues values = convertContactToContentValues(contact);
-                mDB.insert(CONTACT_TABLE_NAME, null, values);
+                long cid = mDB.insert(CONTACT_TABLE_NAME, null, values);
+                Log.i(TAG, "new contact id:" + cid);
                 this.addContactData(contact);
                 values.clear();
                 values = null;
