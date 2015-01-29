@@ -201,6 +201,7 @@ public class ContactSyncManager {
         int toAddSize = toAddToServerList.size();
         try {
             Log.d(TAG, "add to server: " + toAddSize);
+            Log.d(TAG, "add to server id:" + logId(toAddToServerList));
             addContactsToServer(toAddToServerList);
             toAddToServerList.clear();
         } catch (MoMoException e) {
