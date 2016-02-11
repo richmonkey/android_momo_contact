@@ -2,15 +2,71 @@
 package cn.com.nd.momo.api.types;
 
 import android.accounts.Account;
+import android.util.Log;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 /**
  * @Description:自定义联系人帐号类
  * @author chenjp
  */
 public class MyAccount extends Account {
-    public static String ACCOUNT_MOBILE_NAME = "mobile";
+    private final static String TAG = "account";
 
+    public static String getSystemProperty(String propName){
+        String line = null;
+        BufferedReader input = null;
+        try
+        {
+            Process p = Runtime.getRuntime().exec("getprop " + propName);
+            input = new BufferedReader(new InputStreamReader(p.getInputStream()), 1024);
+            line = input.readLine();
+            input.close();
+        }
+        catch (IOException ex)
+        {
+            Log.e(TAG, "Unable to read sysprop " + propName, ex);
+            return null;
+        }
+        finally
+        {
+            if(input != null)
+            {
+                try
+                {
+                    input.close();
+                }
+                catch (IOException e)
+                {
+                    Log.e(TAG, "Exception while closing InputStream", e);
+                }
+            }
+        }
+        return line;
+    }
+
+    public static boolean isH2OS() {
+        String version = getSystemProperty("ro.rom.version");
+        if (version != null) {
+            return version.indexOf("H2OS") != -1;
+        } else {
+            return false;
+        }
+    }
+
+    public static String ACCOUNT_MOBILE_NAME = "mobile";
     public static String ACCOUNT_MOBILE_TYPE = "mobile";
+
+    static {
+        if (isH2OS()) {
+            ACCOUNT_MOBILE_NAME = "PHONE";
+            ACCOUNT_MOBILE_TYPE = "com.android.localphone";
+            Log.i(TAG, "oneplus h2os");
+        }
+    }
+
 
     public static String ALL_ACCOUNT_TYPE = "cn.com.nd.allAccount";
 
