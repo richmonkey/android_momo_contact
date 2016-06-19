@@ -28,8 +28,16 @@ import rx.Observable;
  * Created by tsung on 10/10/14.
  */
 public interface IMHttp {
+
+    static class Password {
+        public String password;
+    }
+
     @GET("/verify_code")
     Observable<Code> getVerifyCode(@Query("zone") String zone, @Query("number") String number);
+
+    @POST("/auth/password")
+    Observable<Object> setPassword(@Body Password password);
 
     @POST("/auth/token")
     Observable<Token> postAuthToken(@Body PostAuthToken code);

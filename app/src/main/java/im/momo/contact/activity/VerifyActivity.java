@@ -102,7 +102,7 @@ public class VerifyActivity extends AccountActivity implements TextView.OnEditor
                         //中国区不加区号 和momo保持兼容
                         GlobalUserInfo.setPhoneNumber(phone);
 
-                        Intent intent = new Intent(VerifyActivity.this, MainActivity.class);
+                        Intent intent = new Intent(VerifyActivity.this, PasswordActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(intent);
                         BusProvider.getInstance().post(new LoginSuccessEvent());
